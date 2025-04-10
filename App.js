@@ -13,6 +13,7 @@ import ChatComponent from './components/ChatComponent';
 import SupabaseManager from './components/SupabaseManager';
 import GoogleMapScreen from './components/GoogleMapScreen';
 import RewardPointsScreen from './components/RewardPointsScreen';
+import HomePageScreen from './components/HomePageScreen';
 
 // Placeholder screens for the navigation items that aren't implemented yet
 const UpdatesScreen = () => <View style={styles.center}><Text>Updates Screen</Text></View>;
@@ -112,8 +113,8 @@ function BottomTabNavigator() {
         }}
       />
       <Tab.Screen 
-        name="Settings" 
-        component={SettingsScreen} 
+        name="Home" 
+        component={HomePageScreen} 
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="settings-outline" color={color} size={size} />
@@ -188,6 +189,11 @@ export default function App() {
         <Stack.Screen
           name="Chat"
           component={ChatComponent}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Home"
+          component={HomePageScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
