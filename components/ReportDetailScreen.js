@@ -9,9 +9,12 @@ import {
   SafeAreaView,
   StatusBar,
   Share,
-  Dimensions
+  ActivityIndicator,
+  Dimensions,
+  Linking
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import SupabaseManager from './SupabaseManager';
 
 const { width } = Dimensions.get('window');
 
@@ -20,39 +23,61 @@ const ReportDetailScreen = ({ route, navigation }) => {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [relatedReports, setRelatedReports] = useState([]);
 
   useEffect(() => {
-    const fetchReportDetails = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch the report details from Supabase
-        const { data, error } = await supabase
-          .from('reports')
-          .select('*')
-          .eq('id', reportId)
-          .single();
-          
-        if (error) throw error;
-        
-        setReport(data);
-      } catch (err) {
-        console.error('Error fetching report:', err);
-        setError('Failed to load report details');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchReportDetails();
   }, [reportId]);
+
+  const fetchReportDetails = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch the report details from Supabase
+      const { data, error } = await SupabaseManager.getReportById(reportId);
+      
+      if (error) throw error;
+      if (!data) throw new Error('Report not found');
+      
+      setReport(data);
+      
+      // Fetch related reports in the same category
+      if (data.category) {
+        fetchRelatedReports(data.category, data.id);
+      }
+    } catch (err) {
+      console.error('Error fetching report:', err);
+      setError(err.message || 'Failed to load report details');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRelatedReports = async (category, currentReportId) => {
+    try {
+      const { data, error } = await SupabaseManager.getReportsByCategory(category, 4);
+      
+      if (error) throw error;
+      
+      // Filter out the current report and limit to 3 related reports
+      const filtered = data
+        .filter(item => item.id !== currentReportId)
+        .slice(0, 3);
+        
+      setRelatedReports(filtered);
+    } catch (err) {
+      console.error('Error fetching related reports:', err);
+    }
+  };
 
   const handleShare = async () => {
     try {
       if (report) {
         await Share.share({
           message: `Check out this environmental report: ${report.title}`,
-          url: `https://ecotracker.app/reports/${reportId}`,
+          // If you have a web version, you can include a URL
+          // url: `https://yourapp.com/reports/${reportId}`,
+          title: report.title,
         });
       }
     } catch (error) {
@@ -60,10 +85,23 @@ const ReportDetailScreen = ({ route, navigation }) => {
     }
   };
 
+  const handleRelatedReportPress = (id) => {
+    // Navigate to the selected report
+    navigation.push('ReportDetail', { reportId: id });
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    
+    const options = { year: 'numeric', month: 'long', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3366CC" />
           <Text style={styles.loadingText}>Loading report...</Text>
         </View>
       </SafeAreaView>
@@ -73,13 +111,25 @@ const ReportDetailScreen = ({ route, navigation }) => {
   if (error || !report) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error || 'Report not found'}</Text>
+        <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton} 
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.backButtonText}>Go Back</Text>
+            <Ionicons name="arrow-back" size={24} color="#333" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Report Details</Text>
+          <View style={styles.placeholder} />
+        </View>
+        
+        <View style={styles.errorContainer}>
+          <Ionicons name="alert-circle-outline" size={50} color="#D32F2F" />
+          <Text style={styles.errorText}>{error || 'Report not found'}</Text>
+          <TouchableOpacity 
+            style={styles.goBackButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Text style={styles.goBackButtonText}>Return to Reports</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -98,14 +148,10 @@ const ReportDetailScreen = ({ route, navigation }) => {
         >
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
-        <View style={styles.headerActions}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Ionicons name="share-outline" size={24} color="#333" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="bookmark-outline" size={24} color="#333" />
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.headerTitle}>Report Details</Text>
+        <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+          <Ionicons name="share-outline" size={24} color="#333" />
+        </TouchableOpacity>
       </View>
       
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
@@ -118,25 +164,32 @@ const ReportDetailScreen = ({ route, navigation }) => {
         
         {/* Report Content */}
         <View style={styles.contentContainer}>
-          {/* Category and Date */}
-          <View style={styles.metaInfo}>
-            <View style={styles.categoryContainer}>
-              <Text style={styles.category}>{report.category}</Text>
-            </View>
-            <Text style={styles.date}>
-              Published on {new Date(report.created_at).toLocaleDateString()}
-            </Text>
+          {/* Category Badge */}
+          <View style={styles.categoryContainer}>
+            <Text style={styles.category}>{report.category}</Text>
           </View>
           
           {/* Title */}
           <Text style={styles.title}>{report.title}</Text>
           
-          {/* Author Info */}
-          <View style={styles.authorContainer}>
-            <View style={styles.authorInfo}>
-              <Text style={styles.authorName}>By {report.author}</Text>
-              <Text style={styles.publishInfo}>{report.location}</Text>
+          {/* Author and Date Info */}
+          <View style={styles.metaContainer}>
+            <View style={styles.authorContainer}>
+              <Ionicons name="person-outline" size={16} color="#666" />
+              <Text style={styles.metaText}>{report.author}</Text>
             </View>
+            
+            <View style={styles.dateContainer}>
+              <Ionicons name="calendar-outline" size={16} color="#666" />
+              <Text style={styles.metaText}>{formatDate(report.created_at)}</Text>
+            </View>
+            
+            {report.location && (
+              <View style={styles.locationContainer}>
+                <Ionicons name="location-outline" size={16} color="#666" />
+                <Text style={styles.metaText}>{report.location}</Text>
+              </View>
+            )}
           </View>
           
           {/* Content */}
@@ -144,36 +197,48 @@ const ReportDetailScreen = ({ route, navigation }) => {
             <Text style={styles.contentText}>{report.content}</Text>
           </View>
           
-          {/* Stats and Actions */}
-          <View style={styles.statsContainer}>
-            <View style={styles.stat}>
-              <Ionicons name="eye-outline" size={18} color="#666" />
-              <Text style={styles.statText}>{report.views || 0} views</Text>
-            </View>
-            <View style={styles.stat}>
-              <Ionicons name="chatbubble-outline" size={18} color="#666" />
-              <Text style={styles.statText}>{report.comments || 0} comments</Text>
-            </View>
+          {/* Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="bookmark-outline" size={20} color="#3366CC" />
+              <Text style={styles.actionText}>Save</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+              <Ionicons name="share-social-outline" size={20} color="#3366CC" />
+              <Text style={styles.actionText}>Share</Text>
+            </TouchableOpacity>
+            
+            {report.website_url && (
+              <TouchableOpacity 
+                style={styles.actionButton}
+                onPress={() => Linking.openURL(report.website_url)}
+              >
+                <Ionicons name="globe-outline" size={20} color="#3366CC" />
+                <Text style={styles.actionText}>Website</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           {/* Related Reports Section */}
-          {report.relatedReports && report.relatedReports.length > 0 && (
+          {relatedReports.length > 0 && (
             <View style={styles.relatedReportsSection}>
               <Text style={styles.sectionTitle}>Related Reports</Text>
-              <View style={styles.relatedReports}>
-                {report.relatedReports.map((relatedReport) => (
+              <View style={styles.relatedReportsContainer}>
+                {relatedReports.map((item) => (
                   <TouchableOpacity 
-                    key={relatedReport.id}
+                    key={item.id}
                     style={styles.relatedReportCard}
-                    onPress={() => navigation.replace('ReportDetail', { reportId: relatedReport.id })}
+                    onPress={() => handleRelatedReportPress(item.id)}
                   >
                     <Image 
-                      source={{ uri: relatedReport.imageUrl }} 
+                      source={{ uri: item.imageUrl }} 
                       style={styles.relatedReportImage}
                       defaultSource={require('../assets/resized.jpg')}
                     />
+                    <Text style={styles.relatedReportCategory}>{item.category}</Text>
                     <Text style={styles.relatedReportTitle} numberOfLines={2}>
-                      {relatedReport.title}
+                      {item.title}
                     </Text>
                   </TouchableOpacity>
                 ))}

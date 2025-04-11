@@ -14,6 +14,11 @@ import SupabaseManager from './components/SupabaseManager';
 import GoogleMapScreen from './components/GoogleMapScreen';
 import RewardPointsScreen from './components/RewardPointsScreen';
 import HomePageScreen from './components/HomePageScreen';
+import ReportDetailScreen from './components/ReportDetailScreen';
+import OptionsScreen from './components/OptionsScreen';
+import EditProfileScreen from './components/EditProfileScreen';
+import ReportEnvironmentScreen from './components/ReportEnvironmentScreen';
+import FeedbackScreen from './components/FeedbackScreen';
 
 // Placeholder screens for the navigation items that aren't implemented yet
 const UpdatesScreen = () => <View style={styles.center}><Text>Updates Screen</Text></View>;
@@ -194,6 +199,31 @@ export default function App() {
         <Stack.Screen
           name="Home"
           component={HomePageScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReportDetail"
+          component={ReportDetailScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Options"
+          component={OptionsScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="EditProfile"
+          component={EditProfileScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="ReportCases"
+          component={ReportEnvironmentScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Feedback"
+          component={FeedbackScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>

@@ -7,65 +7,97 @@ import {
   ScrollView, 
   Image, 
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  ActivityIndicator,
+  RefreshControl
 } from 'react-native';
-import { Ionicons, FontAwesome } from '@expo/vector-icons';
-
-// Mock data for environmental reports
-const mockReports = [
-  {
-    id: 1,
-    category: 'AIR QUALITY',
-    title: 'Urban pollution levels reached critical state in downtown area',
-    timeAgo: '3 min ago',
-    image: require('../assets/resized.jpg'),
-    content: 'Air quality index has dropped significantly over the past 24 hours due to increased industrial activities and traffic congestion. Local authorities recommend residents to limit outdoor activities until further notice.',
-    expanded: false,
-  },
-  {
-    id: 2,
-    category: 'CONSERVATION',
-    title: 'Local wetland restoration project exceeds expectations',
-    timeAgo: '2 hours ago',
-    image: require('../assets/resized.jpg'),
-    content: 'The community-led wetland restoration initiative has shown remarkable progress, with biodiversity increasing by 40% since the project began six months ago.',
-    expanded: false,
-  },
-  {
-    id: 3,
-    category: 'CLIMATE',
-    title: 'New sustainable energy initiative launches in rural communities',
-    timeAgo: '5 hours ago',
-    image: require('../assets/resized.jpg'),
-    content: 'A coalition of environmental organizations has launched a program to bring renewable energy solutions to underserved rural communities, aiming to reduce carbon emissions while creating local jobs.',
-    expanded: false,
-  },
-  {
-    id: 4,
-    category: 'WASTE MANAGEMENT',
-    title: 'City implements new recycling program to reduce landfill waste',
-    timeAgo: '1 day ago',
-    image: require('../assets/resized.jpg'),
-    content: 'The municipal waste management department has introduced an innovative recycling initiative expected to divert up to 60% of household waste from landfills within the first year.',
-    expanded: false,
-  },
-];
+import { Ionicons } from '@expo/vector-icons';
+import SupabaseManager from './SupabaseManager';
 
 const HomePageScreen = ({ navigation }) => {
-  const [reports, setReports] = useState(mockReports);
-  const [userName, setUserName] = useState('Alex');
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
+  const [userName, setUserName] = useState('User');
+  const [greeting, setGreeting] = useState('');
   
-  // Function to handle expanding/collapsing a report
-  const toggleReportExpansion = (id) => {
-    setReports(reports.map(report => 
-      report.id === id ? { ...report, expanded: !report.expanded } : report
-    ));
+  useEffect(() => {
+    loadData();
+    setGreeting(getGreeting());
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return 'Good morning';
+    if (hour < 18) return 'Good afternoon';
+    return 'Good evening';
   };
 
-  // Featured report is the first one
-  const featuredReport = reports[0];
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch user's full name
+      const fullName = await SupabaseManager.getUserFullName();
+      setUserName(fullName);
+      
+      // Fetch reports
+      await fetchReports();
+    } catch (err) {
+      console.error('Error loading data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchReports = async () => {
+    try {
+      const { data, error } = await SupabaseManager.getAllReports();
+      
+      if (error) throw error;
+      
+      setReports(data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching reports:', err);
+      setError('Failed to load environmental reports');
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchReports();
+  };
+
+  const handleViewFullReport = (reportId) => {
+    navigation.navigate('ReportDetail', { reportId });
+  };
+
+  // Get excerpt from full content (first 100 characters)
+  const getExcerpt = (content, maxLength = 100) => {
+    if (!content) return '';
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength).trim() + '...';
+  };
+
+  // Featured report is the first one, if any
+  const featuredReport = reports.length > 0 ? reports[0] : null;
   // The rest are regular reports
-  const regularReports = reports.slice(1);
+  const regularReports = reports.length > 1 ? reports.slice(1) : [];
+
+  if (loading && !refreshing) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#3366CC" />
+          <Text style={styles.loadingText}>Loading reports...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -77,9 +109,9 @@ const HomePageScreen = ({ navigation }) => {
           <Ionicons name="menu" size={28} color="#333" />
         </TouchableOpacity>
         
-        <Text style={styles.appTitle}>EcoTracker</Text>
+        <Text style={styles.appTitle}>Konserve</Text>
         
-        <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
+        <TouchableOpacity onPress={() => navigation.navigate('Options')}>
           <View style={styles.avatarContainer}>
             <Ionicons name="person-circle-outline" size={32} color="#333" />
           </View>
@@ -88,109 +120,115 @@ const HomePageScreen = ({ navigation }) => {
       
       {/* Welcome Message */}
       <View style={styles.welcomeContainer}>
-        <Text style={styles.welcomeText}>Welcome, {userName}</Text>
+        <Text style={styles.welcomeText}>
+          {greeting}, <Text style={styles.userName}>{userName}</Text>
+        </Text>
+        <Text style={styles.welcomeSubtext}>Stay updated with environmental reports</Text>
       </View>
       
       <ScrollView 
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
       >
-        {/* Featured Report */}
-        <TouchableOpacity 
-          style={styles.featuredReportContainer}
-          onPress={() => toggleReportExpansion(featuredReport.id)}
-        >
-          <Image 
-            source={featuredReport.image} 
-            style={styles.featuredImage}
-            defaultSource={require('../assets/resized.jpg')}
-          />
-          <View style={styles.featuredOverlay}>
-            <Text style={styles.reportCategory}>{featuredReport.category}</Text>
-            <Text style={styles.featuredTitle}>{featuredReport.title}</Text>
-            <Text style={styles.reportTime}>{featuredReport.timeAgo}</Text>
-            
-            {featuredReport.expanded && (
-              <View style={styles.expandedContent}>
-                <Text style={styles.reportContent}>{featuredReport.content}</Text>
-                <TouchableOpacity style={styles.readMoreButton}>
-                  <Text style={styles.readMoreText}>View Full Report</Text>
-                </TouchableOpacity>
-              </View>
+        {error ? (
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorText}>{error}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton} 
+              onPress={fetchReports}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            {/* Featured Report */}
+            {featuredReport && (
+              <TouchableOpacity 
+                style={styles.featuredReportContainer}
+                onPress={() => handleViewFullReport(featuredReport.id)}
+              >
+                <Image 
+                  source={{ uri: featuredReport.imageUrl }} 
+                  style={styles.featuredImage}
+                  defaultSource={require('../assets/resized.jpg')}
+                />
+                <View style={styles.featuredOverlay}>
+                  <Text style={styles.reportCategory}>{featuredReport.category}</Text>
+                  <Text style={styles.featuredTitle}>{featuredReport.title}</Text>
+                  <Text style={styles.reportExcerpt} numberOfLines={2}>
+                    {getExcerpt(featuredReport.content)}
+                  </Text>
+                  <View style={styles.reportMeta}>
+                    <Text style={styles.reportAuthor}>By {featuredReport.author}</Text>
+                    <Text style={styles.reportTime}>
+                      {new Date(featuredReport.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  
+                  <TouchableOpacity 
+                    style={styles.readMoreButton}
+                    onPress={() => handleViewFullReport(featuredReport.id)}
+                  >
+                    <Text style={styles.readMoreText}>View Full Report</Text>
+                  </TouchableOpacity>
+                </View>
+              </TouchableOpacity>
             )}
             
-            <View style={styles.reportActions}>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="chatbubble-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="bookmark-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Ionicons name="share-outline" size={24} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </View>
-        </TouchableOpacity>
-        
-        {/* Latest Reports Section */}
-        <View style={styles.latestReportsContainer}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Latest Reports</Text>
-            <TouchableOpacity>
-              <Ionicons name="chevron-forward-circle-outline" size={24} color="#999" />
-            </TouchableOpacity>
-          </View>
-          
-          {/* List of Regular Reports */}
-          {regularReports.map(report => (
-            <TouchableOpacity 
-              key={report.id}
-              style={styles.reportCard}
-              onPress={() => toggleReportExpansion(report.id)}
-            >
-              <Image 
-                source={report.image} 
-                style={styles.reportImage}
-                defaultSource={require('../assets/resized.jpg')}
-              />
-              <View style={styles.reportInfo}>
-                <Text style={styles.reportCategory}>{report.category}</Text>
-                <Text style={styles.reportTitle}>{report.title}</Text>
-                <Text style={styles.reportTime}>{report.timeAgo}</Text>
-                
-                {report.expanded && (
-                  <View style={styles.expandedContent}>
-                    <Text style={styles.reportContent}>{report.content}</Text>
-                    <TouchableOpacity style={styles.readMoreButton}>
-                      <Text style={styles.readMoreText}>View Full Report</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
+            {/* Latest Reports Section */}
+            <View style={styles.latestReportsContainer}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionTitle}>Latest Reports</Text>
+                <TouchableOpacity>
+                  <Ionicons name="filter-outline" size={24} color="#666" />
+                </TouchableOpacity>
               </View>
-            </TouchableOpacity>
-          ))}
-        </View>
+              
+              {regularReports.length === 0 ? (
+                <Text style={styles.noReportsText}>No recent reports available</Text>
+              ) : (
+                /* List of Regular Reports */
+                regularReports.map(report => (
+                  <TouchableOpacity 
+                    key={report.id}
+                    style={styles.reportCard}
+                    onPress={() => handleViewFullReport(report.id)}
+                  >
+                    <Image 
+                      source={{ uri: report.imageUrl }} 
+                      style={styles.reportImage}
+                      defaultSource={require('../assets/resized.jpg')}
+                    />
+                    <View style={styles.reportInfo}>
+                      <Text style={styles.reportCategory}>{report.category}</Text>
+                      <Text style={styles.reportTitle}>{report.title}</Text>
+                      <Text style={styles.reportExcerpt} numberOfLines={2}>
+                        {getExcerpt(report.content, 60)}
+                      </Text>
+                      <View style={styles.cardMeta}>
+                        <Text style={styles.reportAuthor}>{report.author}</Text>
+                        <Text style={styles.reportTime}>
+                          {new Date(report.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      <TouchableOpacity 
+                        style={styles.viewButton}
+                        onPress={() => handleViewFullReport(report.id)}
+                      >
+                        <Text style={styles.viewButtonText}>Read More</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </View>
+          </>
+        )}
       </ScrollView>
-      
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="home" size={24} color="#3366CC" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="bookmark-outline" size={24} color="#999" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="search" size={24} color="#999" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="notifications-outline" size={24} color="#999" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
-          <Ionicons name="settings-outline" size={24} color="#999" />
-        </TouchableOpacity>
-      </View>
     </SafeAreaView>
   );
 };
@@ -237,7 +275,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featuredReportContainer: {
-    height: 280,
+    height: 300,
     position: 'relative',
     marginBottom: 15,
   },
@@ -251,7 +289,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
     padding: 15,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
@@ -260,6 +298,11 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#FFF',
+    marginBottom: 8,
+  },
+  reportExcerpt: {
+    fontSize: 14,
+    color: '#DDD',
     marginBottom: 8,
   },
   reportCategory: {
@@ -273,23 +316,37 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     alignSelf: 'flex-start',
   },
+  reportMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  reportAuthor: {
+    fontSize: 13,
+    color: '#DDD',
+  },
   reportTime: {
     fontSize: 12,
     color: '#CCC',
   },
-  reportActions: {
-    flexDirection: 'row',
-    marginTop: 12,
+  readMoreButton: {
+    backgroundColor: '#3366CC',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    alignSelf: 'flex-start',
   },
-  actionButton: {
-    marginRight: 20,
+  readMoreText: {
+    color: '#FFF',
+    fontSize: 14,
+    fontWeight: '500',
   },
   latestReportsContainer: {
     backgroundColor: '#FFF',
     borderRadius: 10,
     padding: 15,
     marginHorizontal: 10,
-    marginBottom: 80,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -311,12 +368,13 @@ const styles = StyleSheet.create({
   },
   reportImage: {
     width: 100,
-    height: 100,
+    height: 120,
     borderRadius: 8,
     marginRight: 15,
   },
   reportInfo: {
     flex: 1,
+    justifyContent: 'space-between',
   },
   reportTitle: {
     fontSize: 16,
@@ -324,43 +382,64 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 5,
   },
-  expandedContent: {
-    marginTop: 10,
-  },
-  reportContent: {
-    fontSize: 14,
-    color: '#555',
-    lineHeight: 20,
+  cardMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 5,
     marginBottom: 10,
   },
-  readMoreButton: {
-    backgroundColor: '#3366CC',
-    paddingVertical: 8,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+  viewButton: {
+    backgroundColor: '#F0F0F0',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
     alignSelf: 'flex-start',
-    marginTop: 5,
   },
-  readMoreText: {
-    color: '#FFF',
-    fontSize: 14,
+  viewButtonText: {
+    color: '#3366CC',
+    fontSize: 12,
     fontWeight: '500',
   },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFF',
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#EEE',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
   },
-  navItem: {
+  loadingText: {
+    fontSize: 16,
+    color: '#666',
+    marginTop: 10,
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+    marginTop: 50,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#D32F2F',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#3366CC',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  noReportsText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginTop: 20,
+    marginBottom: 20,
   },
 });
 

@@ -19,6 +19,379 @@ class SupabaseManager {
   }
 
 
+  
+/**
+ * Submit user feedback to the database using the currently logged in user
+ * @param {Object} feedbackData - The feedback data to submit
+ * @param {number} feedbackData.rating - The user's rating (0-4 index)
+ * @param {Array} feedbackData.selectedFeatures - Array of feature IDs the user liked
+ * @param {string} feedbackData.comment - User's comment
+ * @param {Array} feedbackData.featuresList - List of all ratings for reference
+ * @param {Array} feedbackData.features - List of all features for reference
+ * @returns {Promise} Result with data and error properties
+ */
+async submitFeedback(feedbackData) {
+  try {
+    // Get current user
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      return { 
+        error: { message: 'User not authenticated. Cannot submit feedback.' }
+      };
+    }
+    
+    // Prepare data for submission
+    const ratingValue = feedbackData.rating + 1; // Convert from 0-4 index to 1-5 scale
+    const ratingDescription = feedbackData.featuresList[feedbackData.rating].description;
+    
+    // Get names of selected features using the features list passed in the feedbackData
+    const selectedFeatureNames = feedbackData.selectedFeatures.map(id => {
+      const feature = feedbackData.features.find(f => f.id === id);
+      return feature ? feature.name : null;
+    }).filter(Boolean);
+    
+    // Create the feedback entry
+    const { data, error } = await supabase
+      .from('user_feedback')
+      .insert([
+        {
+          user_id: user.id,
+          rating: ratingValue,
+          rating_description: ratingDescription,
+          liked_features: selectedFeatureNames,
+          comment: feedbackData.comment || null,
+          created_at: new Date().toISOString()
+        }
+      ])
+      .select();
+    
+    if (error) {
+      console.error('Error submitting feedback:', error);
+      return { error };
+    }
+    
+    return { data };
+  } catch (err) {
+    console.error('Exception submitting feedback:', err);
+    return { error: err };
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * Upload environmental report image to storage
+ * @param {Object} fileInfo - The image file information
+ * @param {String} fileUri - The uri of the image file
+ * @returns {Promise} Result with data and error properties
+ */
+async uploadEnvironmentalReportImage(fileUri) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: { message: 'User not authenticated' } };
+    
+    // Get file extension from URI
+    const fileExt = fileUri.split('.').pop();
+    const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+    const filePath = `envreportimages/${fileName}`;
+    
+    // Convert the file to base64 for Supabase storage
+    const formData = new FormData();
+    formData.append('file', {
+      uri: fileUri,
+      name: fileName,
+      type: `image/${fileExt}`
+    });
+    
+    // Upload file to Supabase Storage
+    const { error: uploadError, data } = await supabase.storage
+      .from('reportcaseimages')
+      .upload(filePath, formData);
+      
+    if (uploadError) {
+      console.error("Environmental image upload error:", uploadError);
+      return { error: uploadError };
+    }
+    
+    // Get public URL for the uploaded image
+    const { data: { publicUrl } } = supabase.storage
+      .from('reportcaseimages')
+      .getPublicUrl(filePath);
+      
+    return { 
+      data: { 
+        path: filePath,
+        url: publicUrl 
+      }, 
+      error: null 
+    };
+  } catch (error) {
+    console.error("Upload process error:", error);
+    return { error };
+  }
+}
+
+/**
+ * Submit an environmental report to the database
+ * @param {Object} reportData - The report data including images, description, location, etc.
+ * @returns {Promise} Result with data and error properties
+ */
+async submitEnvironmentalReport(reportData) {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: { message: 'User not authenticated' } };
+    
+    // Upload all images and collect their paths
+    const imagePaths = [];
+    const imageUrls = [];
+    
+    // Process each image
+    for (const imageUri of reportData.images) {
+      const { data, error } = await this.uploadEnvironmentalReportImage(imageUri);
+      
+      if (error) {
+        console.error("Error uploading image:", error);
+        continue; // Skip this image but continue with others
+      }
+      
+      if (data) {
+        imagePaths.push(data.path);
+        imageUrls.push(data.url);
+      }
+    }
+    
+    // Prepare report data for database
+    const reportEntry = {
+      user_id: user.id,
+      incident_type: reportData.incidentType,
+      description: reportData.description,
+      location_lat: reportData.location?.latitude,
+      location_lng: reportData.location?.longitude,
+      address: reportData.address,
+      image_paths: imagePaths,
+      image_urls: imageUrls,
+      status: 'pending', // Initial status
+      created_at: new Date().toISOString()
+    };
+
+    console.log("Submitting report entry:", reportEntry);
+
+    
+    // Insert report into database
+    const { data, error } = await supabase
+      .from('environmental_reportcases')
+      .insert([reportEntry])
+      .select();
+      
+      if (error) {
+        console.error("Detailed Supabase error:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+      return { error };
+    }
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error("Report submission error:", error);
+    return { error };
+  }
+}
+
+/**
+ * Get all environmental reports for a user
+ * @returns {Promise} Result with data and error properties
+ */
+async getUserEnvironmentalReports() {
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { error: { message: 'User not authenticated' } };
+    
+    const { data, error } = await supabase
+      .from('environmental_reports')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+      
+    if (error) {
+      console.error("Error fetching user reports:", error);
+      return { error };
+    }
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error("Get user reports error:", error);
+    return { error };
+  }
+}
+
+/**
+ * Get an environmental report by ID
+ * @param {String} reportId - The ID of the report to fetch
+ * @returns {Promise} Result with data and error properties
+ */
+async getEnvironmentalReportById(reportId) {
+  try {
+    const { data, error } = await supabase
+      .from('environmental_reports')
+      .select('*')
+      .eq('id', reportId)
+      .single();
+      
+      if (error) {
+        console.error("Detailed Supabase error:", {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        });
+      return { error };
+    }
+    
+    return { data, error: null };
+  } catch (error) {
+    console.error("Get report error:", error);
+    return { error };
+  }
+}
+
+
+
+
+  // report methods
+    /**
+   * Get the current user's profile
+   * @returns {Promise} Result with data and error properties
+   */
+    async getUserProfile() {
+      // Updated for Supabase v2 API
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) return { error: { message: 'User not authenticated' } };
+      
+      return await supabase
+        .from('users')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+    }
+  
+    /**
+     * Get the current logged in user
+     * @returns {Promise} User object or null
+     */
+    async getCurrentUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      return user;
+    }
+  
+    /**
+     * Get the current user's full name
+     * @returns {Promise<string>} User's full name or 'User'
+     */
+    async getUserFullName() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) return 'User';
+        
+        const { data, error } = await supabase
+          .from('users')
+          .select('full_name')
+          .eq('user_id', user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        return data?.full_name || 'User';
+      } catch (error) {
+        console.error('Error fetching user full name:', error);
+        return 'User';
+      }
+    }
+  
+    /**
+     * Fetch all environmental reports
+     * @param {number} limit - Maximum number of reports to fetch
+     * @returns {Promise} Result with data and error properties
+     */
+    async getAllReports(limit = 20) {
+      try {
+        const { data, error } = await supabase
+          .from('reports')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(limit);
+          
+        if (error) throw error;
+        
+        return { data, error: null };
+      } catch (error) {
+        console.error('Error fetching reports:', error);
+        return { data: null, error };
+      }
+    }
+  
+    /**
+     * Fetch a specific report by ID
+     * @param {string} reportId - ID of the report to fetch
+     * @returns {Promise} Result with data and error properties
+     */
+    async getReportById(reportId) {
+      try {
+        const { data, error } = await supabase
+          .from('reports')
+          .select('*')
+          .eq('id', reportId)
+          .single();
+          
+        if (error) throw error;
+        
+        return { data, error: null };
+      } catch (error) {
+        console.error(`Error fetching report with ID ${reportId}:`, error);
+        return { data: null, error };
+      }
+    }
+  
+    /**
+     * Fetch reports by category
+     * @param {string} category - Category to filter by
+     * @param {number} limit - Maximum number of reports to fetch
+     * @returns {Promise} Result with data and error properties
+     */
+    async getReportsByCategory(category, limit = 10) {
+      try {
+        const { data, error } = await supabase
+          .from('reports')
+          .select('*')
+          .eq('category', category)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+          
+        if (error) throw error;
+        
+        return { data, error: null };
+      } catch (error) {
+        console.error(`Error fetching reports in category ${category}:`, error);
+        return { data: null, error };
+      }
+    }
+
+  
+
+
 
   // ==================== REWARD POINTS RELATED METHODS ====================
 
@@ -501,7 +874,7 @@ class SupabaseManager {
       
       // Extract file extension from mime type or name
       const fileExt = fileInfo.type ? fileInfo.type.split('/')[1] : fileInfo.name.split('.').pop();
-      const fileName = `${user.id}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
       const filePath = `avatars/${fileName}`;
       
       // Convert the file to base64 for Supabase storage
@@ -523,25 +896,31 @@ class SupabaseManager {
       }
       
       // Get the public URL
-      const { publicURL, error: urlError } = supabase.storage
+      const { data: urlData } = supabase.storage
         .from('profileimages')
         .getPublicUrl(filePath);
+
+        const publicURL = urlData.publicUrl;
         
-      if (urlError) {
-        console.error("Getting avatar URL error:", urlError);
-        return { error: urlError };
+        if (!publicURL) {
+          return { error: { message: 'Failed to get avatar URL' } };
+        }
+        
+        // Update user profile with avatar URL
+        const { error: updateError } = await this.updateUserProfile({
+          avatar_url: publicURL
+        });
+        
+        if (updateError) {
+          return { error: updateError };
+        }
+        
+        return { data: { avatar_url: publicURL } };
+      } catch (error) {
+        console.error('Error uploading avatar:', error);
+        return { error };
       }
-      
-      // Update user profile with avatar URL
-      return await this.updateUserProfile({
-        avatar_url: publicURL
-      });
-      
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      return { error };
     }
-  }
 
   /**
    * Update user profile information
