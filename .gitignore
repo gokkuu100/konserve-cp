@@ -36,3 +36,5 @@ yarn-error.*
 *.tsbuildinfo
 
 .env
+components/SubscriptionPlan.js
+components/PaymentProcessing.js

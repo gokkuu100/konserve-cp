@@ -19,6 +19,11 @@ import OptionsScreen from './components/OptionsScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import ReportEnvironmentScreen from './components/ReportEnvironmentScreen';
 import FeedbackScreen from './components/FeedbackScreen';
+import Services from './components/Services';
+import CollectionAgenciesScreen from './components/CollectionAgenciesScreen';
+import SubscriptionPlan from './components/SubscriptionPlan';
+import { MessageDetails, Messages } from './components/MessagesScreen';
+import WasteCalendarScreen from './components/WasteCalendarScreen';
 
 // Placeholder screens for the navigation items that aren't implemented yet
 const UpdatesScreen = () => <View style={styles.center}><Text>Updates Screen</Text></View>;
@@ -77,8 +82,8 @@ function BottomTabNavigator() {
       safeAreaInsets={{ bottom: 10 }}
     >
       <Tab.Screen 
-        name="Updates" 
-        component={UpdatesScreen} 
+        name="Services" 
+        component={Services} 
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="notifications-outline" color={color} size={size} />
@@ -224,6 +229,36 @@ export default function App() {
         <Stack.Screen
           name="Feedback"
           component={FeedbackScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Services"
+          component={Services}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="CollectionAgencies"
+          component={CollectionAgenciesScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="SubscriptionPlan"
+          component={SubscriptionPlan}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Messages"
+          component={Messages}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="MessageDetails"
+          component={MessageDetails}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Calendar"
+          component={WasteCalendarScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
