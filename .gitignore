@@ -37,3 +37,10 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
+.env
+supabase/
+components/Subscriptions.js
+components/SubscriptionPlanScreen.js
+components/SubscriptionPlan.js
+components/PaymentProcessing.js
+components/PaymentScreen.js
