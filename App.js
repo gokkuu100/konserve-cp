@@ -7,6 +7,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import NotificationService from './supabase/services/NotificationService';
 import { ThemeProvider, useTheme } from './ThemeContext';
 
 // Import your screens
@@ -41,18 +42,8 @@ import AgencyReviewScreen from './components/AgencyReviewScreen';
 import MarketDirectChat from './components/MarketDirectChat';
 import MarketMessagesInbox from './components/MarketMessagesInbox';
 import WasteMarketplace from './components/MarketScreen';
-import { supabase } from './supabase/config/supabaseConfig';
 import ProfileManager from './supabase/manager/auth/ProfileManager';
 import MessageManager from './supabase/manager/messaging/MessageManager';
-
-// Configure notifications handler
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: true,
-  }),
-});
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -262,11 +253,11 @@ function MainTabNavigator() {
 }
 
 // Main App component
-export default function App() {
+const App = () => {
   const [appIsReady, setAppIsReady] = useState(false);
   const navigationRef = useRef(null);
   
-  // This effect handles the splash screen and app initialization
+  // Initialize the app
   useEffect(() => {
     async function initializeApp() {
       try {
@@ -290,7 +281,7 @@ export default function App() {
     }
   }, [appIsReady]);
 
-  // Deep link handling effect
+  // Deep link handling
   useEffect(() => {
     const subscription = Linking.addEventListener('url', (event) => {
       console.log('Deep link received:', event.url);
@@ -332,6 +323,31 @@ export default function App() {
     },
   };
 
+  // Add this useEffect to handle notification responses when app is in the background
+  useEffect(() => {
+    const backgroundSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      
+      if (data?.screen && navigationRef.current) {
+        // Navigate to the appropriate screen
+        navigationRef.current.navigate(data.screen, data.params || {});
+        
+        // If this is a message notification, refresh the messages list
+        if (data.screen === 'Messages' || data.screen === 'OrgMessages') {
+          // This could trigger a global event to refresh messages
+          // For simplicity, you can use a global variable or context
+          if (global.refreshMessages) {
+            global.refreshMessages();
+          }
+        }
+      }
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(backgroundSubscription);
+    };
+  }, []);
+
   if (!appIsReady) {
     return (
       <View style={styles.loadingContainer}>
@@ -347,95 +363,74 @@ export default function App() {
       </ThemeProvider>
     </AuthProvider>
   );
-}
+};
 
 // Separate component to use theme and auth context
-function AppContent({ navigationRef, linking }) {
+const AppContent = ({ navigationRef, linking }) => {
   const { theme, isDarkMode } = useTheme();
   const { isAuthenticated, loading, userId } = useAuth();
   const [notificationsInitialized, setNotificationsInitialized] = useState(false);
   
   console.log('AppContent rendering, auth state:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
   
-  // Register for push notifications
-  const registerForPushNotificationsAsync = async () => {
-    try {
-      const { status: existingStatus } = await Notifications.getPermissionsAsync();
-      let finalStatus = existingStatus;
-      
-      // Only ask if permissions have not already been determined
-      if (existingStatus !== 'granted') {
-        const { status } = await Notifications.requestPermissionsAsync();
-        finalStatus = status;
-      }
-      
-      // Stop here if the user did not grant permissions
-      if (finalStatus !== 'granted') {
-        console.log('Notification permission not granted');
-        return;
-      }
-      
-      // Get the push token
-      const tokenData = await Notifications.getExpoPushTokenAsync();
-      const pushToken = tokenData.data;
-      console.log('Push token:', pushToken);
-      
-      // Save token to Supabase if user is authenticated
-      if (userId) {
-        await saveTokenToSupabase(pushToken, userId);
-      }
-    } catch (error) {
-      console.error('Error registering for push notifications:', error);
-    }
-  };
-  
-  // Save token to Supabase
-  const saveTokenToSupabase = async (token, userId) => {
-    if (!userId || !token) return;
-    
-    try {
-      const { error } = await supabase
-        .from('user_push_tokens')
-        .upsert({ 
-          user_id: userId,
-          push_token: token,
-          device_type: Platform.OS,
-          last_used: new Date().toISOString()
-        });
-        
-      if (error) {
-        console.error('Error saving push token:', error);
-      }
-    } catch (error) {
-      console.error('Exception saving push token:', error);
-    }
-  };
-  
-  // Set up notification response handler
+  // Initialize notifications
   useEffect(() => {
-    if (isAuthenticated && !notificationsInitialized) {
-      // Register for push notifications
-      registerForPushNotificationsAsync();
-      
-      // Set up notification response handler
-      const responseListener = Notifications.addNotificationResponseReceivedListener(response => {
-        const data = response.notification.request.content.data;
-        
-        // Check if notification contains navigation data
-        if (data?.screen && navigationRef.current) {
-          // Navigate to the screen specified in the notification
-          navigationRef.current.navigate(data.screen, data.params);
+    const initNotifications = async () => {
+      try {
+        // Initialize notification handler
+        await NotificationService.initializeNotifications();
+        setNotificationsInitialized(true);
+      } catch (error) {
+        console.error('Error initializing notifications:', error);
+      }
+    };
+    
+    initNotifications();
+  }, []);
+  
+  // Register for push notifications
+  useEffect(() => {
+    if (isAuthenticated && userId && notificationsInitialized) {
+      const registerForPushNotifications = async () => {
+        try {
+          const hasPermission = await NotificationService.requestPermissions();
+          if (hasPermission) {
+            await NotificationService.registerDeviceToken(userId);
+          }
+        } catch (error) {
+          console.error('Error registering for push notifications:', error);
         }
-      });
-      
-      setNotificationsInitialized(true);
-      
-      // Cleanup
-      return () => {
-        Notifications.removeNotificationSubscription(responseListener);
       };
+      
+      registerForPushNotifications();
     }
-  }, [isAuthenticated, navigationRef.current, notificationsInitialized, userId]);
+  }, [isAuthenticated, userId, notificationsInitialized]);
+  
+  // Set up notification response handlers
+  useEffect(() => {
+    if (!notificationsInitialized) return;
+    
+    // Handle notifications received while app is in foreground
+    const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
+      console.log('Notification received in foreground:', notification);
+    });
+    
+    // Handle notification responses (user taps on notification)
+    const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
+      const data = response.notification.request.content.data;
+      
+      if (data?.screen && navigationRef.current) {
+        // Navigate to the appropriate screen
+        navigationRef.current.navigate(data.screen, data.params || {});
+      }
+    });
+    
+    // Return cleanup function
+    return () => {
+      Notifications.removeNotificationSubscription(foregroundSubscription);
+      Notifications.removeNotificationSubscription(responseSubscription);
+    };
+  }, [notificationsInitialized, navigationRef]);
   
   // Create navigation theme based on app theme
   const navigationTheme = {
@@ -509,14 +504,12 @@ function AppContent({ navigationRef, linking }) {
             <Stack.Screen name="MarketDirectChat" component={MarketDirectChat} />
             <Stack.Screen name="MarketInbox" component={MarketMessagesInbox} />
             <Stack.Screen name="AgencyMessageDetail" component={AgencyMessageDetailScreen} />
-
-
           </>
         )}
       </Stack.Navigator>
     </NavigationContainer>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
@@ -528,3 +521,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 });
+
+export default App;

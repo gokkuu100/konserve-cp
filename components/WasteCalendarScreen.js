@@ -1,27 +1,26 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import moment from 'moment';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  ScrollView,
-  Platform,
-  Alert,
   ActivityIndicator,
+  Alert,
+  Dimensions,
+  Modal,
+  Platform,
   SafeAreaView,
+  ScrollView,
   StatusBar,
-  Dimensions
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
-import * as Notifications from 'expo-notifications';
-import { supabase } from '../supabase/config/supabaseConfig';
-import CalendarManager from '../supabase/manager/calendar/CalendarManager';
 import { useAuth } from '../contexts/AuthContext';
-import moment from 'moment';
+import CalendarManager from '../supabase/manager/calendar/CalendarManager';
+import NotificationService from '../supabase/services/NotificationService';
 
 // ... existing notification setup code ...
 
@@ -288,12 +287,10 @@ const WasteCalendarScreen = ({ navigation }) => {
       
       const memoTitle = memo.title || 'Waste Calendar Reminder';
       
-      const identifier = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: memoTitle,
-          body: memo.text,
-          data: { date: date, memoId: memo.id },
-        },
+      const identifier = await NotificationService.scheduleNotification({
+        title: memoTitle,
+        body: memo.text,
+        data: { screen: 'WasteCalendar', date: date, memoId: memo.id },
         trigger,
       });
       
@@ -308,7 +305,7 @@ const WasteCalendarScreen = ({ navigation }) => {
     if (!identifier) return;
     
     try {
-      await Notifications.cancelScheduledNotificationAsync(identifier);
+      await NotificationService.cancelNotification(identifier);
       console.log('Notification canceled:', identifier);
     } catch (error) {
       console.error('Error canceling notification:', error);

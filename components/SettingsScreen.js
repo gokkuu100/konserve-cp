@@ -1,18 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
-  View,
+  Switch,
   Text,
   TouchableOpacity,
-  Switch,
-  ScrollView,
-  SafeAreaView,
-  Alert,
-  ActivityIndicator
+  View
 } from 'react-native';
-import { Ionicons, MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabase/config/supabaseConfig';
+import NotificationService from '../supabase/services/NotificationService';
 import { useTheme } from '../ThemeContext';
 
 const SettingsScreen = ({ navigation }) => {
@@ -40,9 +42,47 @@ const SettingsScreen = ({ navigation }) => {
   const loadSettings = async () => {
     try {
       setIsLoading(true);
+      
+      // Load from AsyncStorage first
       const savedSettings = await AsyncStorage.getItem('userSettings');
-      if (savedSettings) {
-        setSettings(JSON.parse(savedSettings));
+      let settings = savedSettings ? JSON.parse(savedSettings) : null;
+      
+      // If user is authenticated, try to get settings from Supabase
+      if (userId) {
+        const { data, error } = await supabase
+          .from('user_settings')
+          .select('*')
+          .eq('user_id', userId)
+          .maybeSingle();
+          
+        if (error) {
+          console.error('Error loading settings from Supabase:', error);
+        } else if (data) {
+          // Merge with existing settings or use defaults
+          settings = {
+            ...(settings || {
+              notifications: true,
+              sound: true,
+              locationServices: true,
+              dataUsage: 'wifi-only',
+              language: 'English',
+              biometricAuth: false,
+              autoBackup: true,
+              dataCollection: true,
+              reminderFrequency: 'daily'
+            }),
+            notifications: data.notifications !== null ? data.notifications : true,
+            sound: data.sound !== null ? data.sound : true,
+            reminderFrequency: data.reminderFrequency || 'daily'
+          };
+          
+          // Save merged settings back to AsyncStorage
+          await AsyncStorage.setItem('userSettings', JSON.stringify(settings));
+        }
+      }
+      
+      if (settings) {
+        setSettings(settings);
       }
     } catch (error) {
       console.error('Error loading settings:', error);
@@ -53,7 +93,25 @@ const SettingsScreen = ({ navigation }) => {
   
   const saveSettings = async (newSettings) => {
     try {
+      // Save to AsyncStorage as before
       await AsyncStorage.setItem('userSettings', JSON.stringify(newSettings));
+      
+      // Save notification settings to Supabase if user is authenticated
+      if (userId) {
+        const { error } = await supabase
+          .from('user_settings')
+          .upsert({
+            user_id: userId,
+            notifications: newSettings.notifications,
+            sound: newSettings.sound,
+            reminderFrequency: newSettings.reminderFrequency,
+            updated_at: new Date().toISOString()
+          });
+          
+        if (error) {
+          console.error('Error saving settings to Supabase:', error);
+        }
+      }
     } catch (error) {
       console.error('Error saving settings:', error);
       Alert.alert('Error', 'Failed to save settings');
@@ -64,6 +122,19 @@ const SettingsScreen = ({ navigation }) => {
     const newSettings = { ...settings, [key]: !settings[key] };
     setSettings(newSettings);
     saveSettings(newSettings);
+    
+    // If toggling notification settings, refresh permissions
+    if (key === 'notifications' && newSettings.notifications === true) {
+      NotificationService.requestPermissions()
+        .then(hasPermission => {
+          if (hasPermission && userId) {
+            NotificationService.registerDeviceToken(userId);
+          }
+        })
+        .catch(error => {
+          console.error('Error requesting notification permissions:', error);
+        });
+    }
   };
   
   const handleSignOut = async () => {
