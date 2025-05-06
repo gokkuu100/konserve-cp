@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  Image,
   TouchableOpacity,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  Platform,
-  KeyboardAvoidingView,
-  Alert,
-  ActivityIndicator,
-  SafeAreaView
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import Svg, { Path } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native'; // To navigate after login
 import { useAuth } from '../contexts/AuthContext'; // Updated import path
-import AuthManager from '../supabase/manager/auth/AuthManager';
+import WebAuthHelper from '../supabase/helpers/WebAuthHelper';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import { useTheme } from '../ThemeContext';
 
@@ -41,6 +39,15 @@ const LoginScreen = ({ navigation }) => {
       navigation.replace('MainTabs');
     }
   }, [isAuthenticated, navigation]);
+
+  // Make auth context available globally for DeepLinkHandler
+  useEffect(() => {
+    global.authContext = { signIn, isAuthenticated };
+    
+    return () => {
+      global.authContext = null;
+    };
+  }, [signIn, isAuthenticated]);
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -70,32 +77,89 @@ const LoginScreen = ({ navigation }) => {
     try {
       setIsGoogleLoading(true);
       
-      const { data, error } = await AuthManager.signInWithGoogle();
+      console.log('Starting Google sign-in process...');
+      const result = await WebAuthHelper.signInWithOAuth('google');
       
-      if (error) {
-        throw new Error(error.message || 'Google sign-in failed');
+      if (result.error) {
+        throw result.error;
       }
-
-      // Check if profile exists
-      const { data: profile } = await ProfileManager.getUserProfile();
       
-      // Sign in using auth context
-      await signIn(data.session);
-
-      // If profile is not complete, navigate to profile completion
-      if (!profile || !profile.constituency) {
-        navigation.navigate('ProfileCompletion', { 
-          user: data.session.user,
-          existingProfile: profile || null
-        });
+      if (result.canceled) {
+        console.log('User canceled the sign-in process');
+        return;
+      }
+      
+      if (!result.success) {
+        // Check if we have a session from deep linking that happened while this was processing
+        if (global.authSucceeded && global.authSession) {
+          console.log('Found session from deep link handler');
+          await processAuthenticatedUser(
+            global.authUser || global.authSession.user, 
+            global.authSession
+          );
+          
+          // Clear globals
+          global.authSucceeded = false;
+          global.authSession = null;
+          global.authUser = null;
+          
+          return;
+        }
+        
+        throw new Error('Authentication failed or was canceled');
+      }
+      
+      // We have a successful authentication
+      if (result.session && result.user) {
+        await processAuthenticatedUser(result.user, result.session);
       } else {
-        navigation.replace('MainTabs');
+        throw new Error('No session or user returned from authentication');
       }
     } catch (error) {
       console.error('Google sign-in error:', error);
-      Alert.alert('Sign-In Failed', error.message);
+      
+      // Don't show cancellation errors
+      if (!error.message?.includes('canceled')) {
+        Alert.alert(
+          'Sign-In Failed', 
+          error.message || 'Failed to authenticate with Google'
+        );
+      }
     } finally {
       setIsGoogleLoading(false);
+    }
+  };
+
+  // Helper function to process authenticated user
+  const processAuthenticatedUser = async (user, session) => {
+    try {
+      console.log('Processing authenticated user:', user.email);
+      
+      // Check if profile is complete
+      const { data: profile, error: profileError } = await ProfileManager.getUserProfile(user.id);
+      
+      if (profileError) {
+        console.log('Error fetching profile:', profileError);
+      }
+      
+      // Profile exists but is incomplete
+      if (!profile || !profile.constituency) {
+        console.log('Profile is incomplete, navigating to ProfileCompletion screen');
+        navigation.navigate('ProfileCompletion', { 
+          user,
+          email: user.email,
+          name: user.user_metadata?.full_name || ''
+        });
+        return; // Exit early - we don't want to sign in yet
+      }
+      
+      // Profile is complete, sign in fully
+      console.log('Profile is complete, signing in user');
+      await signIn(null, null, session);
+      navigation.replace('MainTabs');
+    } catch (error) {
+      console.error('Error processing authenticated user:', error);
+      throw error;
     }
   };
 

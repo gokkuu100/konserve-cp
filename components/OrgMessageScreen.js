@@ -138,6 +138,16 @@ const OrgMessageScreen = ({ navigation }) => {
     fetchMessages();
   }, [isAuthenticated, loading, activeTab]);
 
+  useEffect(() => {
+    // Define a global refresh function that can be called from notification handlers
+    global.refreshOrgMessages = fetchMessages;
+    
+    return () => {
+      // Clean up
+      global.refreshOrgMessages = null;
+    };
+  }, [fetchMessages]);
+
   const fetchMessages = async () => {
     setIsLoading(true);
     setError(null);

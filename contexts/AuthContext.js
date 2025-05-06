@@ -20,6 +20,8 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -33,6 +35,8 @@ export const AuthProvider = ({ children }) => {
           console.log('Initial auth session:', currentSession?.user?.id ? 'Authenticated' : 'Not authenticated');
           setSession(currentSession);
           setUser(currentSession?.user ?? null);
+          setUserId(currentSession?.user?.id ?? null);
+          setIsAuthenticated(!!currentSession?.user);
           setLoading(false);
         }
 
@@ -43,6 +47,8 @@ export const AuthProvider = ({ children }) => {
             if (mounted) {
               setSession(newSession);
               setUser(newSession?.user ?? null);
+              setUserId(newSession?.user?.id ?? null);
+              setIsAuthenticated(!!newSession?.user);
             }
           }
         );
@@ -62,21 +68,37 @@ export const AuthProvider = ({ children }) => {
     initializeAuth();
   }, []);
 
-  const signIn = async (email, password) => {
+  const signIn = async (email, password, existingSession = null) => {
     try {
       setLoading(true);
-      const { data, error } = await AuthManager.loginUser(email, password);
-      if (error) throw error;
       
-      // Explicitly update state after successful login
-      if (data?.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+      let session = existingSession;
+      
+      // If no existing session provided, sign in with email/password
+      if (!session) {
+        const { data, error } = await AuthManager.loginUser(email, password);
+        
+        if (error) {
+          throw error;
+        }
+        
+        session = data.session;
       }
       
-      return { success: true, data };
+      // If we have a valid session, set user state
+      if (session) {
+        setUser(session.user);
+        setUserId(session.user.id);
+        setSession(session);
+        setIsAuthenticated(true);
+        
+        // Persist the session (not needed with autoRefreshToken, but good to be explicit)
+        return { success: true };
+      } else {
+        throw new Error('No session returned from authentication');
+      }
     } catch (error) {
-      console.error('Sign in error:', error);
+      console.error('Error signing in:', error);
       return { success: false, error };
     } finally {
       setLoading(false);
@@ -92,6 +114,8 @@ export const AuthProvider = ({ children }) => {
       // Explicitly clear state after sign out
       setSession(null);
       setUser(null);
+      setUserId(null);
+      setIsAuthenticated(false);
       
       return { success: true };
     } catch (error) {
@@ -111,6 +135,8 @@ export const AuthProvider = ({ children }) => {
       if (session) {
         setSession(session);
         setUser(session.user);
+        setUserId(session.user.id);
+        setIsAuthenticated(true);
       }
       
       return { success: true, session };

@@ -1,29 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
   ActivityIndicator,
   Alert,
-  Platform
+  Dimensions,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import SupabaseManager from './SupabaseManager';
-import authManager from '../auth';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabase/config/supabaseConfig';
+import ProfileManager from '../supabase/manager/auth/ProfileManager';
+import { useTheme } from '../ThemeContext';
 import LocationSelectionModal from './LocationSelectionModal';
-import { Ionicons } from '@expo/vector-icons';
 
-const ProfileCompletionScreen = ({ route, navigation }) => {
-  const { user } = route.params || {};
-  const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({
-    username: '',
-    county: 'Nairobi',
-    constituency: '',
-    phone_number: '',
-  });
+const windowHeight = Dimensions.get('window').height;
+
+const ProfileCompletionScreen = ({ navigation, route }) => {
+  const { user, email, name } = route.params;
+  const { signIn } = useAuth();
+  const { theme } = useTheme();
+  const [isLoading, setIsLoading] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
   
   // Nairobi constituencies
@@ -31,7 +32,7 @@ const ProfileCompletionScreen = ({ route, navigation }) => {
     "Westlands",
     "Dagoretti North",
     "Dagoretti South",
-    "Lang'ata",
+    "Langata",
     "Kibra",
     "Roysambu",
     "Kasarani",
@@ -47,145 +48,165 @@ const ProfileCompletionScreen = ({ route, navigation }) => {
     "Mathare"
   ];
 
-  useEffect(() => {
-    // If user has some existing profile data, pre-fill the form
-    if (route.params?.existingProfile) {
-      const { username, county, constituency, phone_number } = route.params.existingProfile;
-      setForm({
-        username: username || '',
-        county: county || 'Nairobi',
-        constituency: constituency || '',
-        phone_number: phone_number || '',
-      });
-    }
-  }, [route.params]);
+  const [form, setForm] = useState({
+    username: name || '',
+    county: 'Nairobi',
+    constituency: '',
+  });
 
-  const handleSubmit = async () => {
-    // Validate form
-    if (!form.username.trim()) {
-      Alert.alert('Error', 'Please enter a username');
+  const handleComplete = async () => {
+    const { username, county, constituency } = form;
+    
+    // Validation
+    if (!username.trim()) {
+      Alert.alert('Missing Field', 'Please enter your username');
       return;
     }
-    
-    if (!form.constituency) {
-      Alert.alert('Error', 'Please select your constituency');
+
+    if (!constituency) {
+      Alert.alert('Missing Field', 'Please select your constituency');
       return;
     }
-    
-    if (!form.phone_number.trim()) {
-      Alert.alert('Error', 'Please enter your phone number');
-      return;
-    }
-    
-    // Simple phone number validation
-    const phoneRegex = /^(?:\+254|0)[17]\d{8}$/;
-    if (!phoneRegex.test(form.phone_number)) {
-      Alert.alert('Error', 'Please enter a valid Kenyan phone number (e.g., +254712345678 or 0712345678)');
-      return;
-    }
-    
-    setLoading(true);
-    
+  
     try {
-      // Get current user
-      const currentUser = authManager.getCurrentUser();
-      if (!currentUser) {
-        throw new Error('User not authenticated');
+      setIsLoading(true);
+      
+      console.log('Completing user profile for:', user.id);
+      
+      // Update the user profile
+      const { error } = await ProfileManager.updateUserProfile(user.id, {
+        full_name: username,
+        email: email,
+        county: county,
+        constituency: constituency
+      });
+        
+      if (error) {
+        console.error("Profile update error:", error);
+        Alert.alert('Update Failed', error.message || 'Failed to update profile');
+        return;
       }
       
-      // Update user profile
-      const { success, error } = await SupabaseManager.updateUserProfileAfterGoogleSignIn(
-        currentUser.id,
-        form
-      );
+      console.log('Profile updated successfully');
       
-      if (!success) {
-        throw new Error(error || 'Failed to update profile');
+      // Check if we have a session from the auth process
+      let session = null;
+      
+      // If user object contains a session (from our navigation params)
+      if (user.session) {
+        session = user.session;
+      } 
+      // Check global variable set by DeepLinkHandler
+      else if (global.authSession) {
+        session = global.authSession;
+        
+        // Clear global session to avoid reuse
+        global.authSession = null;
+        global.authSucceeded = false;
+        global.authUser = null;
       }
       
-      Alert.alert(
-        'Success',
-        'Your profile has been updated successfully',
-        [{ text: 'OK', onPress: () => navigation.replace('Home') }]
-      );
+      // If we don't have a session, get the current one
+      if (!session) {
+        const { data } = await supabase.auth.getSession();
+        session = data?.session;
+      }
+      
+      // Sign in the user now that profile is complete
+      if (session) {
+        console.log('Signing in user with session');
+        const { success } = await signIn(null, null, session);
+        
+        if (success) {
+          Alert.alert(
+            'Profile Completed',
+            'Your profile has been updated successfully!',
+            [{ 
+              text: 'Continue', 
+              onPress: () => navigation.reset({
+                index: 0,
+                routes: [{ name: 'MainTabs' }],
+              })
+            }]
+          );
+        } else {
+          Alert.alert('Error', 'Failed to sign in after profile update');
+        }
+      } else {
+        Alert.alert(
+          'Profile Updated',
+          'Your profile has been completed. Please sign in.',
+          [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+        );
+      }
     } catch (error) {
-      console.error('Error updating profile:', error);
-      Alert.alert('Error', error.message || 'An error occurred while updating your profile');
+      console.error('Profile update error:', error);
+      Alert.alert('Update Failed', error.message || 'An unexpected error occurred');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.formContainer}>
-        <Text style={styles.title}>Complete Your Profile</Text>
-        <Text style={styles.subtitle}>Please provide the following information to continue</Text>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Username</Text>
+      <View style={styles.contentWrapper}>
+        <Image
+          source={require('../assets/longleaf.jpg')}
+          style={styles.leafImage}
+          resizeMode="cover"
+        />
+
+        <Text style={styles.register}>Complete Your Profile</Text>
+        <Text style={styles.subTitle}>We need a few more details</Text>
+
+        <View style={styles.inputWrapper}>
           <TextInput
             style={styles.input}
-            placeholder="Enter your username"
+            placeholder="Username"
+            placeholderTextColor="#666"
+            autoCapitalize="none"
             value={form.username}
-            onChangeText={(text) => setForm({ ...form, username: text })}
+            onChangeText={(val) => setForm({ ...form, username: val.trim() })}
           />
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>County</Text>
-          <View style={styles.pickerContainer}>
-            <Text style={styles.pickerText}>Nairobi</Text>
-          </View>
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Constituency</Text>
+
           <TouchableOpacity 
-            style={styles.locationSelector}
+            style={[styles.input, styles.constituencyInput]}
             onPress={() => setLocationModalVisible(true)}
           >
-            <Text style={form.constituency ? styles.locationText : styles.locationPlaceholder}>
-              {form.constituency || "Select your constituency"}
-            </Text>
-            <Ionicons name="chevron-forward" size={20} color="#357002" />
+            <View style={styles.constituencySelector}>
+              <Text style={form.constituency ? styles.constituencyText : styles.constituencyPlaceholder}>
+                {form.constituency || "Select your constituency"}
+              </Text>
+              <Ionicons name="chevron-forward" size={20} color="#555" />
+            </View>
           </TouchableOpacity>
         </View>
-        
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Phone Number</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g., 0712345678 or +254712345678"
-            value={form.phone_number}
-            onChangeText={(text) => setForm({ ...form, phone_number: text })}
-            keyboardType="phone-pad"
-          />
-        </View>
-        
+
         <TouchableOpacity 
-          style={styles.submitButton} 
-          onPress={handleSubmit}
-          disabled={loading}
+          style={[styles.completeBtn, isLoading && styles.disabledBtn]} 
+          onPress={handleComplete}
+          disabled={isLoading}
         >
-          {loading ? (
+          {isLoading ? (
             <ActivityIndicator color="#fff" size="small" />
           ) : (
-            <Text style={styles.submitButtonText}>Continue</Text>
+            <Text style={styles.completeBtnText}>Complete Profile</Text>
           )}
         </TouchableOpacity>
       </View>
 
-      {/* Location Selection Modal */}
       <LocationSelectionModal
         visible={locationModalVisible}
         onClose={() => setLocationModalVisible(false)}
         onSelectCounty={(county) => setForm({ ...form, county })}
-        onSelectConstituency={(constituency) => setForm({ ...form, constituency })}
+        onSelectConstituency={(constituency) => {
+          setForm({ ...form, constituency });
+          setLocationModalVisible(false);
+        }}
         selectedCounty={form.county}
         selectedConstituency={form.constituency}
         isCountySelectable={false}
-        title="Select Your Location"
+        title="Select Your Constituency"
       />
     </ScrollView>
   );
@@ -194,92 +215,87 @@ const ProfileCompletionScreen = ({ route, navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#fdf6fb',
-    padding: 20,
-  },
-  formContainer: {
     backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    marginVertical: 20,
   },
-  title: {
-    fontSize: 24,
+  contentWrapper: {
+    flex: 1,
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingBottom: 40,
+    position: 'relative',
+  },
+  leafImage: {
+    position: 'absolute',
+    top: windowHeight / 5, 
+    left: 0,
+    right: 0,
+    width: '100%',
+    height: 500,
+    zIndex: 0,
+    opacity: 0.4,
+  },
+  register: {
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 10,
-    textAlign: 'center',
+    fontStyle: 'italic',
+    color: '#000',
+    marginTop: 10,
+    zIndex: 2,
   },
-  subtitle: {
+  subTitle: {
     fontSize: 16,
-    color: '#666',
+    fontStyle: 'italic',
+    color: '#000',
     marginBottom: 20,
-    textAlign: 'center',
+    zIndex: 2,
   },
-  inputContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-    marginBottom: 8,
+  inputWrapper: {
+    marginTop: 10,
+    width: '85%',
+    zIndex: 2,
   },
   input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    borderColor: '#ccc',
     padding: 12,
+    borderRadius: 6,
+    marginBottom: 12,
     fontSize: 16,
+    color: '#000',
   },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
-    backgroundColor: '#f5f5f5',
+  constituencyInput: {
+    paddingVertical: 14,
   },
-  pickerText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-  },
-  submitButton: {
-    backgroundColor: '#357002',
-    borderRadius: 8,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  locationSelector: {
+  constituencySelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 12,
   },
-  locationText: {
+  constituencyText: {
     fontSize: 16,
-    color: '#333',
+    color: '#000',
   },
-  locationPlaceholder: {
+  constituencyPlaceholder: {
     fontSize: 16,
-    color: '#999',
+    color: '#666',
+  },
+  completeBtn: {
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    paddingHorizontal: 50,
+    borderRadius: 25,
+    marginTop: 30,
+    zIndex: 2,
+    minWidth: 200,
+    alignItems: 'center',
+  },
+  disabledBtn: {
+    backgroundColor: '#666',
+  },
+  completeBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

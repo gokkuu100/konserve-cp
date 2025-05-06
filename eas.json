@@ -1,0 +1,10 @@
+{
+    "build": {
+      "production": {
+        "env": {
+          "ENV_FILE": ".env.production"
+        }
+      }
+    }
+  }
+  

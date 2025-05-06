@@ -1,4 +1,5 @@
 import { AntDesign, Feather, Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { DarkTheme, DefaultTheme, NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -39,9 +40,11 @@ import WasteIdentificationScreen from './components/WasteIdentificationScreen';
 // Import managers
 import AgencyMessageDetailScreen from './components/AgencyMessageDetailScreen';
 import AgencyReviewScreen from './components/AgencyReviewScreen';
+import DeepLinkHandler from './components/DeepLinkHandler';
 import MarketDirectChat from './components/MarketDirectChat';
 import MarketMessagesInbox from './components/MarketMessagesInbox';
 import WasteMarketplace from './components/MarketScreen';
+import ProfileCompletionScreen from './components/ProfileCompletionScreen';
 import ProfileManager from './supabase/manager/auth/ProfileManager';
 import MessageManager from './supabase/manager/messaging/MessageManager';
 
@@ -298,9 +301,9 @@ const App = () => {
   // Linking configuration for deep linking
   const linking = {
     prefixes: [
-      'konseveapp://', 
+      'konserveapp://', 
       'https://konserveapp.com',
-      'https://auth.expo.io/@princegoku/konserveapp'
+      'https://auth.expo.io/@princegoku/konserve'
     ],
     config: {
       screens: {
@@ -309,6 +312,7 @@ const App = () => {
         PaymentCancel: 'payment/cancel',   // Handle Paystack cancel redirect
         Login: 'login',
         Register: 'register',
+        ProfileCompletion: 'profile-completion',
         MainTabs: {
           screens: {
             Home: 'home',
@@ -320,6 +324,30 @@ const App = () => {
           }
         }
       }
+    },
+    // Add a custom getInitialURL to handle special cases
+    getInitialURL: async () => {
+      // First check if the app was opened via a deep link
+      const url = await Linking.getInitialURL();
+      
+      if (url) {
+        return url;
+      }
+      
+      // If no deep link, check if we have an active auth session
+      try {
+        const { data } = await supabase.auth.getSession();
+        if (data?.session) {
+          // Store in globals for components to access
+          global.authSession = data.session;
+          global.authUser = data.session.user;
+          global.authSucceeded = true;
+        }
+      } catch (e) {
+        console.error('Error checking session during initial navigation:', e);
+      }
+      
+      return null;
     },
   };
 
@@ -377,9 +405,27 @@ const AppContent = ({ navigationRef, linking }) => {
   useEffect(() => {
     const initNotifications = async () => {
       try {
-        // Initialize notification handler
-        await NotificationService.initializeNotifications();
+        console.log('Initializing notifications...');
+        
+        // Configure how your app should handle received notifications
+        Notifications.setNotificationHandler({
+          handleNotification: async () => {
+            // Get user notification preferences
+            const settingsString = await AsyncStorage.getItem('userSettings');
+            const settings = settingsString ? JSON.parse(settingsString) : { notifications: true, sound: true };
+            
+            console.log('Notification handler called, settings:', settings);
+            
+            return {
+              shouldShowAlert: settings.notifications,
+              shouldPlaySound: settings.sound,
+              shouldSetBadge: settings.notifications,
+            };
+          },
+        });
+        
         setNotificationsInitialized(true);
+        console.log('Notifications initialized successfully');
       } catch (error) {
         console.error('Error initializing notifications:', error);
       }
@@ -393,9 +439,15 @@ const AppContent = ({ navigationRef, linking }) => {
     if (isAuthenticated && userId && notificationsInitialized) {
       const registerForPushNotifications = async () => {
         try {
+          console.log('Requesting notification permissions...');
           const hasPermission = await NotificationService.requestPermissions();
+          console.log('Notification permission status:', hasPermission);
+          
           if (hasPermission) {
+            console.log('Registering device token for user:', userId);
             await NotificationService.registerDeviceToken(userId);
+          } else {
+            console.log('Notification permissions not granted');
           }
         } catch (error) {
           console.error('Error registering for push notifications:', error);
@@ -413,6 +465,8 @@ const AppContent = ({ navigationRef, linking }) => {
     // Handle notifications received while app is in foreground
     const foregroundSubscription = Notifications.addNotificationReceivedListener(notification => {
       console.log('Notification received in foreground:', notification);
+      // Use the new handler method
+      NotificationService.handleReceivedNotification(notification);
     });
     
     // Handle notification responses (user taps on notification)
@@ -420,8 +474,45 @@ const AppContent = ({ navigationRef, linking }) => {
       const data = response.notification.request.content.data;
       
       if (data?.screen && navigationRef.current) {
-        // Navigate to the appropriate screen
-        navigationRef.current.navigate(data.screen, data.params || {});
+        // Mark messages as read if applicable
+        if (data.screen === 'Messages' && data.messageId) {
+          // Create a function to mark agency messages as read
+          const markAgencyMessageRead = async (messageId) => {
+            const { data: message, error } = await supabase
+              .from(data.messageType === 'direct' ? 'agency_messages_direct' : 'agency_messages_general')
+              .update({ is_read: true })
+              .eq('id', messageId)
+              .single();
+            
+            if (error) {
+              console.error('Error marking message as read:', error);
+            }
+          };
+          
+          markAgencyMessageRead(data.messageId);
+        } else if (data.screen === 'OrgMessages' && data.messageId) {
+          // Create a function to mark organization messages as read
+          const markOrgMessageRead = async (messageId) => {
+            const { data: message, error } = await supabase
+              .from(data.messageType === 'direct' ? 'organization_directmessages' : 'organization_generalreport')
+              .update({ is_read: true })
+              .eq('id', messageId)
+              .single();
+            
+            if (error) {
+              console.error('Error marking message as read:', error);
+            }
+          };
+          
+          markOrgMessageRead(data.messageId);
+        }
+        
+        // Navigate to the appropriate screen with any parameters
+        if (data.params) {
+          navigationRef.current.navigate(data.screen, data.params);
+        } else {
+          navigationRef.current.navigate(data.screen);
+        }
       }
     });
     
@@ -460,6 +551,7 @@ const AppContent = ({ navigationRef, linking }) => {
       theme={navigationTheme}
       linking={linking}
     >
+      <DeepLinkHandler />
       <StatusBar 
         barStyle={isDarkMode ? 'light-content' : 'dark-content'} 
         backgroundColor={theme.statusBar} 
@@ -475,6 +567,7 @@ const AppContent = ({ navigationRef, linking }) => {
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+            <Stack.Screen name="ProfileCompletion" component={ProfileCompletionScreen} />
           </>
         ) : (
           // App screens

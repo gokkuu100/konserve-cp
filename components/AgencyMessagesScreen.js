@@ -43,6 +43,16 @@ const AgencyMessagesScreen = ({ navigation }) => {
     }
   }, [isAuthenticated, loading]);
 
+  useEffect(() => {
+    // Define a global refresh function that can be called from notification handlers
+    global.refreshAgencyMessages = checkSubscriptionsAndLoadMessages;
+    
+    return () => {
+      // Clean up
+      global.refreshAgencyMessages = null;
+    };
+  }, [checkSubscriptionsAndLoadMessages]);
+
   // Load subscriptions and then messages - modified to start with a specific agency
   const checkSubscriptionsAndLoadMessages = async () => {
     try {

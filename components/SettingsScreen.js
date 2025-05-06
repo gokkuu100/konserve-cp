@@ -148,7 +148,16 @@ const SettingsScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
+              // Show loading state
+              setIsLoading(true);
+              
+              // Clear any user-specific settings or cached data if needed
+              await AsyncStorage.removeItem('userToken');
+              
+              // Call the signOut function from auth context
               await signOut();
+              
+              // Reset navigation to Login screen
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }]
@@ -156,6 +165,8 @@ const SettingsScreen = ({ navigation }) => {
             } catch (error) {
               console.error('Sign out error:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
+            } finally {
+              setIsLoading(false);
             }
           }
         }
@@ -383,8 +394,13 @@ const SettingsScreen = ({ navigation }) => {
           <TouchableOpacity 
             style={[styles.signOutButton, { backgroundColor: theme.error }]} 
             onPress={handleSignOut}
+            disabled={isLoading}
           >
-            <Text style={styles.signOutText}>Sign Out</Text>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Text style={styles.signOutText}>Sign Out</Text>
+            )}
           </TouchableOpacity>
         </View>
         

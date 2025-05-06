@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Keyboard,
   Modal,
   Platform,
   SafeAreaView,
@@ -15,6 +16,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   View
 } from 'react-native';
 import { Calendar } from 'react-native-calendars';
@@ -501,215 +503,222 @@ const WasteCalendarScreen = ({ navigation }) => {
       )}
       
       {/* Main Content - with different background */}
-      <SafeAreaView 
-        style={[
-          styles.safeArea, 
-          { backgroundColor: colors.background }
-        ]}
-      >
-        <StatusBar barStyle="light-content" backgroundColor={colors.headerBackground} />
-        
-        {/* Header */}
-        <View style={[styles.header, { backgroundColor: colors.headerBackground }]}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Waste Collection Calendar</Text>
-          <View style={{ width: 24 }} />
-        </View>
-        
-        <View style={[styles.container, { backgroundColor: colors.background }]}>
-          <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
-            <Calendar
-              onDayPress={handleDateSelect}
-              markedDates={markedDates}
-              theme={{
-                backgroundColor: colors.background,
-                calendarBackground: colors.card,
-                textSectionTitleColor: colors.text,
-                selectedDayBackgroundColor: colors.primary,
-                selectedDayTextColor: '#ffffff',
-                todayTextColor: colors.accent,
-                dayTextColor: colors.text,
-                textDisabledColor: colors.secondaryText,
-                monthTextColor: colors.text,
-                arrowColor: colors.primary,
-                dotColor: colors.primary,
-                todayBackgroundColor: 'transparent',
-              }}
-            />
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView 
+          style={[
+            styles.safeArea, 
+            { backgroundColor: colors.background }
+          ]}
+        >
+          <StatusBar barStyle="light-content" backgroundColor={colors.headerBackground} />
+          
+          {/* Header */}
+          <View style={[styles.header, { backgroundColor: colors.headerBackground }]}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Waste Collection Calendar</Text>
+            <View style={{ width: 24 }} />
           </View>
-
-          <View style={styles.contentContainer}>
-            <View style={styles.headerRow}>
-              <Text style={[styles.dateHeader, { color: colors.text }]}>
-                {moment(selectedDate).format('MMMM DD, YYYY')}
-              </Text>
-              <TouchableOpacity
-                style={[styles.addButton, { backgroundColor: colors.primary }]}
-                onPress={() => {
-                  setMemoText('');
-                  setMemoTitle('');
-                  setSelectedTime(new Date());
-                  setIsEditing(false);
-                  setSelectedMemoId(null);
-                  setModalVisible(true);
+          
+          <View style={[styles.container, { backgroundColor: colors.background }]}>
+            <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
+              <Calendar
+                onDayPress={handleDateSelect}
+                markedDates={markedDates}
+                theme={{
+                  backgroundColor: colors.background,
+                  calendarBackground: colors.card,
+                  textSectionTitleColor: colors.text,
+                  selectedDayBackgroundColor: colors.primary,
+                  selectedDayTextColor: '#ffffff',
+                  todayTextColor: colors.accent,
+                  dayTextColor: colors.text,
+                  textDisabledColor: colors.secondaryText,
+                  monthTextColor: colors.text,
+                  arrowColor: colors.primary,
+                  dotColor: colors.primary,
+                  todayBackgroundColor: 'transparent',
                 }}
-              >
-                <Ionicons name="add" size={24} color="#fff" />
-              </TouchableOpacity>
+              />
             </View>
 
-            <ScrollView style={styles.memosContainer}>
-              {loading ? (
-                <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
-              ) : (
-                <>
-                  <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      Reminders for {moment(selectedDate).format('MMM D')}
-                    </Text>
-                    {memos.length > 0 ? (
-                      memos.map(memo => renderMemoItem(memo))
-                    ) : (
-                      <View style={[styles.emptyContainer, { backgroundColor: colors.cardAlt }]}>
-                        <Ionicons name="calendar-outline" size={32} color={colors.secondaryText} />
-                        <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
-                          No waste collection reminders for this date
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                  
-                  <View style={styles.section}>
-                    <Text style={[styles.sectionTitle, { color: colors.text }]}>
-                      Upcoming Collection Reminders
-                    </Text>
-                    {upcomingMemos.length > 0 ? (
-                      upcomingMemos.map(memo => renderMemoItem(memo))
-                    ) : (
-                      <View style={[styles.emptyContainer, { backgroundColor: colors.cardAlt }]}>
-                        <Ionicons name="notifications-off-outline" size={32} color={colors.secondaryText} />
-                        <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
-                          No upcoming waste collection reminders
-                        </Text>
-                      </View>
-                    )}
-                  </View>
-                </>
-              )}
-            </ScrollView>
-          </View>
-
-          {/* Main Modal for Adding/Editing Reminders */}
-          <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-          >
-            <View style={styles.modalContainer}>
-              <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
-                <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { color: colors.text }]}>
-                    {isEditing ? 'Edit Collection Reminder' : 'Add Collection Reminder'}
-                  </Text>
-                  <TouchableOpacity onPress={() => setModalVisible(false)}>
-                    <Ionicons name="close" size={24} color={colors.text} />
-                  </TouchableOpacity>
-                </View>
-                
-                <TextInput
-                  style={[styles.titleInput, { color: colors.text, borderColor: colors.border }]}
-                  placeholder="Reminder Title (e.g., Recycling Day)"
-                  placeholderTextColor={colors.secondaryText}
-                  value={memoTitle}
-                  onChangeText={setMemoTitle}
-                />
-                
-                <TextInput
-                  style={[styles.textInput, { color: colors.text, borderColor: colors.border }]}
-                  placeholder="Reminder details (e.g., Put out recycling bins)"
-                  placeholderTextColor={colors.secondaryText}
-                  multiline={true}
-                  value={memoText}
-                  onChangeText={setMemoText}
-                />
-                
-                {/* Enhanced Time Selector */}
-                <View style={[styles.timePickerContainer, { borderColor: colors.border }]}>
-                  <View style={styles.timeLabelRow}>
-                    <Ionicons name="time-outline" size={20} color={colors.primary} />
-                    <Text style={[styles.timeLabel, { color: colors.text }]}>
-                      Reminder Time
-                    </Text>
-                  </View>
-                  
-                  <TouchableOpacity
-                    style={[styles.timeDisplay, { backgroundColor: colors.cardAlt }]}
-                    onPress={() => setShowTimePicker(true)}
-                  >
-                    <Text style={[styles.timeDisplayText, { color: colors.text }]}>
-                      {formatTime(selectedTime)}
-                    </Text>
-                    <Ionicons name="chevron-down" size={18} color={colors.primary} />
-                  </TouchableOpacity>
-                </View>
-                
-                {/* Improved Time Picker Modal */}
-                {Platform.OS === 'ios' && showTimePicker && (
-                  <View style={styles.iosTimePickerContainer}>
-                    <View style={styles.iosTimePickerHeader}>
-                      <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                        <Text style={{ color: colors.error }}>Cancel</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity onPress={() => setShowTimePicker(false)}>
-                        <Text style={{ color: colors.primary }}>Done</Text>
-                      </TouchableOpacity>
-                    </View>
-                    <DateTimePicker
-                      value={selectedTime}
-                      mode="time"
-                      display="spinner"
-                      onChange={onTimeChange}
-                      style={styles.iosTimePicker}
-                      textColor={colors.text}
-                    />
-                  </View>
-                )}
-                
-                {/* Android uses the system time picker which appears as a dialog */}
-                {Platform.OS === 'android' && showTimePicker && (
-                  <DateTimePicker
-                    value={selectedTime}
-                    mode="time"
-                    is24Hour={false}
-                    display="default"
-                    onChange={onTimeChange}
-                  />
-                )}
-                
+            <View style={styles.contentContainer}>
+              <View style={styles.headerRow}>
+                <Text style={[styles.dateHeader, { color: colors.text }]}>
+                  {moment(selectedDate).format('MMMM DD, YYYY')}
+                </Text>
                 <TouchableOpacity
-                  style={[styles.saveButton, { backgroundColor: colors.primary }]}
-                  onPress={saveMemo}
-                  disabled={loading}
+                  style={[styles.addButton, { backgroundColor: colors.primary }]}
+                  onPress={() => {
+                    setMemoText('');
+                    setMemoTitle('');
+                    setSelectedTime(new Date());
+                    setIsEditing(false);
+                    setSelectedMemoId(null);
+                    setModalVisible(true);
+                  }}
                 >
-                  {loading ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Text style={styles.saveButtonText}>
-                      {isEditing ? 'Update' : 'Save'}
-                    </Text>
-                  )}
+                  <Ionicons name="add" size={24} color="#fff" />
                 </TouchableOpacity>
               </View>
+
+              <ScrollView style={styles.memosContainer}>
+                {loading ? (
+                  <ActivityIndicator size="large" color={colors.primary} style={styles.loader} />
+                ) : (
+                  <>
+                    <View style={styles.section}>
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                        Reminders for {moment(selectedDate).format('MMM D')}
+                      </Text>
+                      {memos.length > 0 ? (
+                        memos.map(memo => renderMemoItem(memo))
+                      ) : (
+                        <View style={[styles.emptyContainer, { backgroundColor: colors.cardAlt }]}>
+                          <Ionicons name="calendar-outline" size={32} color={colors.secondaryText} />
+                          <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
+                            No waste collection reminders for this date
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    
+                    <View style={styles.section}>
+                      <Text style={[styles.sectionTitle, { color: colors.text }]}>
+                        Upcoming Collection Reminders
+                      </Text>
+                      {upcomingMemos.length > 0 ? (
+                        upcomingMemos.map(memo => renderMemoItem(memo))
+                      ) : (
+                        <View style={[styles.emptyContainer, { backgroundColor: colors.cardAlt }]}>
+                          <Ionicons name="notifications-off-outline" size={32} color={colors.secondaryText} />
+                          <Text style={[styles.emptyText, { color: colors.secondaryText }]}>
+                            No upcoming waste collection reminders
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  </>
+                )}
+              </ScrollView>
             </View>
-          </Modal>
-        </View>
-      </SafeAreaView>
+
+            {/* Main Modal for Adding/Editing Reminders */}
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                <View style={styles.modalContainer}>
+                  <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
+                    <View style={styles.modalHeader}>
+                      <Text style={[styles.modalTitle, { color: colors.text }]}>
+                        {isEditing ? 'Edit Collection Reminder' : 'Add Collection Reminder'}
+                      </Text>
+                      <TouchableOpacity onPress={() => setModalVisible(false)}>
+                        <Ionicons name="close" size={24} color={colors.text} />
+                      </TouchableOpacity>
+                    </View>
+                    
+                    {/* Content wrapped in ScrollView to allow scrolling if keyboard pushes content up */}
+                    <ScrollView keyboardShouldPersistTaps="handled">
+                      <TextInput
+                        style={[styles.titleInput, { color: colors.text, borderColor: colors.border }]}
+                        placeholder="Reminder Title (e.g., Recycling Day)"
+                        placeholderTextColor={colors.secondaryText}
+                        value={memoTitle}
+                        onChangeText={setMemoTitle}
+                      />
+                      
+                      <TextInput
+                        style={[styles.textInput, { color: colors.text, borderColor: colors.border }]}
+                        placeholder="Reminder details (e.g., Put out recycling bins)"
+                        placeholderTextColor={colors.secondaryText}
+                        multiline={true}
+                        value={memoText}
+                        onChangeText={setMemoText}
+                      />
+                      
+                      {/* Enhanced Time Selector */}
+                      <View style={[styles.timePickerContainer, { borderColor: colors.border }]}>
+                        <View style={styles.timeLabelRow}>
+                          <Ionicons name="time-outline" size={20} color={colors.primary} />
+                          <Text style={[styles.timeLabel, { color: colors.text }]}>
+                            Reminder Time
+                          </Text>
+                        </View>
+                        
+                        <TouchableOpacity
+                          style={[styles.timeDisplay, { backgroundColor: colors.cardAlt }]}
+                          onPress={() => setShowTimePicker(true)}
+                        >
+                          <Text style={[styles.timeDisplayText, { color: colors.text }]}>
+                            {formatTime(selectedTime)}
+                          </Text>
+                          <Ionicons name="chevron-down" size={18} color={colors.primary} />
+                        </TouchableOpacity>
+                      </View>
+                      
+                      <TouchableOpacity
+                        style={[styles.saveButton, { backgroundColor: colors.primary }]}
+                        onPress={saveMemo}
+                        disabled={loading}
+                      >
+                        {loading ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <Text style={styles.saveButtonText}>
+                            {isEditing ? 'Update' : 'Save'}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    </ScrollView>
+                    
+                    {/* Time Picker remains outside the ScrollView but inside the modal */}
+                    {Platform.OS === 'ios' && showTimePicker && (
+                      <View style={styles.iosTimePickerContainer}>
+                        <View style={styles.iosTimePickerHeader}>
+                          <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                            <Text style={{ color: colors.error }}>Cancel</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity onPress={() => setShowTimePicker(false)}>
+                            <Text style={{ color: colors.primary }}>Done</Text>
+                          </TouchableOpacity>
+                        </View>
+                        <DateTimePicker
+                          value={selectedTime}
+                          mode="time"
+                          display="spinner"
+                          onChange={onTimeChange}
+                          style={styles.iosTimePicker}
+                          textColor={colors.text}
+                        />
+                      </View>
+                    )}
+                    
+                    {/* Android uses the system time picker which appears as a dialog */}
+                    {Platform.OS === 'android' && showTimePicker && (
+                      <DateTimePicker
+                        value={selectedTime}
+                        mode="time"
+                        is24Hour={false}
+                        display="default"
+                        onChange={onTimeChange}
+                      />
+                    )}
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </Modal>
+          </View>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
     </>
   );
 };

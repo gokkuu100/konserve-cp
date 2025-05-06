@@ -1,24 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  Image,
+  KeyboardAvoidingView,
+  Platform,
+  SafeAreaView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-  ActivityIndicator,
-  Platform,
-  KeyboardAvoidingView,
-  Alert
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useRoute, useNavigation } from '@react-navigation/native';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase/config/supabaseConfig';
 import MarketChatManager from '../supabase/manager/marketplace/MarketChatManager';
-import * as ImagePicker from 'expo-image-picker';
 import { formatTimeAgo } from '../utils/timeUtils';
 
 const MarketDirectChat = () => {
@@ -389,6 +389,17 @@ const MarketDirectChat = () => {
       </View>
     </View>
   );
+
+  // Add this at the top level of the component
+  useEffect(() => {
+    // Define a global refresh function that can be called from notification handlers
+    global.refreshMarketMessages = fetchMessages;
+    
+    return () => {
+      // Clean up
+      global.refreshMarketMessages = null;
+    };
+  }, [fetchMessages]);
 
   // Main render
   return (

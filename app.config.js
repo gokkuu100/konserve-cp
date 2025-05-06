@@ -19,6 +19,7 @@ export default {
         NSPhotoLibraryUsageDescription: "The app accesses your photos to let you share them with your friends.",
         NSPhotoLibraryAddUsageDescription: "The app saves images to your photo library.",
       },
+      associatedDomains: ["applinks:konserveapp.com"],
       config: {
         googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY_IOS,
       },
@@ -40,6 +41,22 @@ export default {
           apiKey: process.env.GOOGLE_MAPS_API_KEY_ANDROID,
         },
       },
+      intentFilters: [ 
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "konserveapp"
+            },
+            {
+              scheme: "https",
+              host: "*.konserveapp.com"
+            }
+          ],
+          category: ["BROWSABLE", "DEFAULT"]
+        }
+      ],
     },
     plugins: [
       [
@@ -49,7 +66,8 @@ export default {
           cameraPermission: "The app accesses your camera to let you take profile pictures."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     web: {
       favicon: "./assets/favicon.png"
