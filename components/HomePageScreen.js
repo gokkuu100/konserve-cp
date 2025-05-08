@@ -15,6 +15,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import ReportsManager from '../supabase/manager/reports/ReportsManager';
+import { useTheme } from '../ThemeContext';
 
 // Helper function to get greeting based on time of day
 const getGreeting = () => {
@@ -25,6 +26,7 @@ const getGreeting = () => {
 };
 
 const HomePageScreen = ({ navigation }) => {
+  const { theme, isDarkMode } = useTheme();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -143,54 +145,57 @@ const HomePageScreen = ({ navigation }) => {
 
   if (loading && !refreshing) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading reports...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.text }]}>Loading reports...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.surface} />
       
       {/* Top Navigation */}
-      <View style={styles.topNav}>
-        
-        <Text style={styles.appTitle}>Konserve</Text>
+      <View style={[styles.topNav, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
+        <Text style={[styles.appTitle, { color: theme.text }]}>Konserve</Text>
         
         <TouchableOpacity onPress={() => navigation.navigate('Options')}>
-          <View style={styles.avatarContainer}>
-            <Ionicons name="person-circle-outline" size={32} color="#333" />
+          <View style={[styles.avatarContainer, { backgroundColor: theme.background }]}>
+            <Ionicons name="person-circle-outline" size={32} color={theme.text} />
           </View>
         </TouchableOpacity>
       </View>
       
       {/* Welcome Message */}
-      <View style={styles.welcomeContainer}>
-        <Text style={styles.welcomeText}>
-          {greeting}, <Text style={styles.userName}>{userName}</Text>
+      <View style={[styles.welcomeContainer, { backgroundColor: theme.surface }]}>
+        <Text style={[styles.welcomeText, { color: theme.text }]}>
+          {greeting}, <Text style={[styles.userName, { color: theme.primary }]}>{userName}</Text>
         </Text>
-        <Text style={styles.welcomeSubtext}>Stay updated with environmental reports</Text>
+        <Text style={[styles.welcomeSubtext, { color: theme.textSecondary }]}>Stay updated with environmental reports</Text>
       </View>
       
       <ScrollView 
-        style={styles.scrollView}
+        style={[styles.scrollView, { backgroundColor: theme.background }]}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} 
+            colors={[theme.primary]} 
+            tintColor={theme.primary}
+            progressBackgroundColor={theme.surface}
+          />
         }
       >
         {error ? (
           <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>{error}</Text>
+            <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
             <TouchableOpacity 
-              style={styles.retryButton} 
+              style={[styles.retryButton, { backgroundColor: theme.primary }]} 
               onPress={fetchReports}
             >
-              <Text style={styles.retryButtonText}>Retry</Text>
+              <Text style={[styles.retryButtonText, { color: theme.surface }]}>Retry</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -206,7 +211,7 @@ const HomePageScreen = ({ navigation }) => {
                   style={styles.featuredImage}
                   defaultSource={require('../assets/resized.jpg')}
                 />
-                <View style={styles.featuredOverlay}>
+                <View style={[styles.featuredOverlay, { backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.8)' : 'rgba(0, 0, 0, 0.7)' }]}>
                   <Text style={styles.reportCategory}>{featuredReport.category}</Text>
                   <Text style={styles.featuredTitle}>{featuredReport.title}</Text>
                   <Text style={styles.reportExcerpt} numberOfLines={2}>
@@ -220,32 +225,32 @@ const HomePageScreen = ({ navigation }) => {
                   </View>
                   
                   <TouchableOpacity 
-                    style={styles.readMoreButton}
+                    style={[styles.readMoreButton, { backgroundColor: theme.primary }]}
                     onPress={() => handleViewFullReport(featuredReport.id)}
                   >
-                    <Text style={styles.readMoreText}>View Full Report</Text>
+                    <Text style={[styles.readMoreText, { color: isDarkMode ? theme.text : '#fff' }]}>View Full Report</Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             )}
             
             {/* Latest Reports Section */}
-            <View style={styles.latestReportsContainer}>
+            <View style={[styles.latestReportsContainer, { backgroundColor: theme.surface }]}>
               <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>Latest Reports</Text>
+                <Text style={[styles.sectionTitle, { color: theme.text }]}>Latest Reports</Text>
                 <TouchableOpacity>
-                  <Ionicons name="filter-outline" size={24} color="#666" />
+                  <Ionicons name="filter-outline" size={24} color={theme.textSecondary} />
                 </TouchableOpacity>
               </View>
               
               {regularReports.length === 0 ? (
-                <Text style={styles.noReportsText}>No recent reports available</Text>
+                <Text style={[styles.noReportsText, { color: theme.textSecondary }]}>No recent reports available</Text>
               ) : (
                 /* List of Regular Reports */
                 regularReports.map(report => (
                   <TouchableOpacity 
                     key={report.id}
-                    style={styles.reportCard}
+                    style={[styles.reportCard, { borderBottomColor: theme.border }]}
                     onPress={() => handleViewFullReport(report.id)}
                   >
                     <Image 
@@ -255,21 +260,21 @@ const HomePageScreen = ({ navigation }) => {
                     />
                     <View style={styles.reportInfo}>
                       <Text style={styles.reportCategory}>{report.category}</Text>
-                      <Text style={styles.reportTitle}>{report.title}</Text>
-                      <Text style={styles.reportExcerpt} numberOfLines={2}>
+                      <Text style={[styles.reportTitle, { color: theme.text }]}>{report.title}</Text>
+                      <Text style={[styles.reportExcerpt, { color: theme.textSecondary }]} numberOfLines={2}>
                         {getExcerpt(report.content, 60)}
                       </Text>
                       <View style={styles.cardMeta}>
-                        <Text style={styles.reportAuthor}>{report.author}</Text>
-                        <Text style={styles.reportTime}>
+                        <Text style={[styles.reportAuthor, { color: theme.textSecondary }]}>{report.author}</Text>
+                        <Text style={[styles.reportTime, { color: theme.textSecondary }]}>
                           {new Date(report.created_at).toLocaleDateString()}
                         </Text>
                       </View>
                       <TouchableOpacity 
-                        style={styles.viewButton}
+                        style={[styles.viewButton, { backgroundColor: isDarkMode ? theme.secondary : '#F0F0F0' }]}
                         onPress={() => handleViewFullReport(report.id)}
                       >
-                        <Text style={styles.viewButtonText}>Read More</Text>
+                        <Text style={[styles.viewButtonText, { color: isDarkMode ? theme.text : '#3366CC' }]}>Read More</Text>
                       </TouchableOpacity>
                     </View>
                   </TouchableOpacity>

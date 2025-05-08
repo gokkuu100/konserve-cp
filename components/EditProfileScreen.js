@@ -1,26 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
-  View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  SafeAreaView,
-  Alert,
-  ScrollView,
-  Platform,
-  ActivityIndicator,
-  Modal
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabase/config/supabaseConfig';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import ConstituencyManager from '../supabase/manager/constituencychange/ConstituencyManager';
-import { useAuth } from '../contexts/AuthContext';
+import { useTheme } from '../ThemeContext';
 import ConstituencyChangeRequest from './ConstituencyChangeRequest';
 
 const EditProfileScreen = ({ navigation, route }) => {
+  const { theme, isDarkMode } = useTheme();
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [genderModalVisible, setGenderModalVisible] = useState(false);
@@ -67,12 +70,18 @@ const EditProfileScreen = ({ navigation, route }) => {
           age: data.age || '',
           avatar: data.avatar_url || null,
           membershipType: data.membership_type || 'Standard',
-          county: data.county || 'Nairobi City County',
+          county: data.county || 'Nairobi County',
           constituency: data.constituency || ''
         });
         
         setSelectedGender(data.gender || '');
         setSelectedAge(data.age || '');
+        
+        // Check for any pending constituency change requests
+        await checkPendingRequests();
+        
+        // Check if there are any approved changes that need processing
+        await ConstituencyManager.processApprovedChanges();
       }
     } catch (error) {
       console.error('Error fetching user profile:', error);
@@ -114,93 +123,187 @@ const EditProfileScreen = ({ navigation, route }) => {
     })();
   }, []);
 
-  // Function to handle image selection options
-  const handleImageSelection = () => {
-    Alert.alert(
-      'Profile Picture',
-      'Choose an option',
-      [
-        { 
-          text: 'Take Photo', 
-          onPress: async () => {
-            const { status } = await ImagePicker.requestCameraPermissionsAsync();
-            
-            if (status !== 'granted') {
-              Alert.alert('Permission needed', 'Sorry, we need camera permissions to take pictures.');
-              return;
+// Function to handle image selection and upload
+const handleImageSelection = () => {
+  Alert.alert(
+    'Profile Picture',
+    'Choose an option',
+    [
+      { 
+        text: 'Take Photo', 
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          
+          if (status !== 'granted') {
+            Alert.alert('Permission needed', 'Sorry, we need camera permissions to take pictures.');
+            return;
+          }
+          
+          let result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+            base64: true // Request base64 data
+          });
+      
+          if (!result.canceled && result.assets && result.assets.length > 0) {
+            const asset = result.assets[0];
+            // Make sure we have base64 data
+            if (asset.base64) {
+              handleAvatarUploadWithBase64(asset);
+            } else {
+              Alert.alert('Error', 'Failed to get image data. Please try again.');
             }
-        
-            let result = await ImagePicker.launchCameraAsync({
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 0.7,
-            });
-        
-            if (!result.canceled) {
-              handleAvatarUpload(result.assets[0]);
+          }
+        } 
+      },
+      { 
+        text: 'Choose from Gallery', 
+        onPress: async () => {
+          let result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [1, 1],
+            quality: 0.7,
+            base64: true // Request base64 data
+          });
+      
+          if (!result.canceled && result.assets && result.assets.length > 0) {
+            const asset = result.assets[0];
+            // Make sure we have base64 data
+            if (asset.base64) {
+              handleAvatarUploadWithBase64(asset);
+            } else {
+              Alert.alert('Error', 'Failed to get image data. Please try again.');
             }
-          } 
-        },
-        { 
-          text: 'Choose from Gallery', 
-          onPress: async () => {
-            let result = await ImagePicker.launchImageLibraryAsync({
-              mediaTypes: ImagePicker.MediaTypeOptions.Images,
-              allowsEditing: true,
-              aspect: [1, 1],
-              quality: 0.7,
-            });
-        
-            if (!result.canceled) {
-              handleAvatarUpload(result.assets[0]);
-            }
-          } 
-        },
-        { text: 'Cancel', style: 'cancel' }
-      ]
-    );
-  };
+          }
+        } 
+      },
+      { text: 'Cancel', style: 'cancel' }
+    ]
+  );
+};
 
-  // Function to upload avatar using ProfileManager
-  const handleAvatarUpload = async (fileInfo) => {
-    try {
-      setLoading(true);
-      
-      // Update UI immediately while uploading
-      setUserData({ ...userData, avatar: fileInfo.uri });
-      
-      const userId = await ProfileManager.getCurrentUserId();
-      if (!userId) {
-        throw new Error('User not authenticated');
-      }
-
-      // Use uploadAvatar method from ProfileManager
-      const { publicUrl, error } = await ProfileManager.uploadAvatar(userId, {
-        uri: fileInfo.uri,
-        type: fileInfo.type,
-        name: fileInfo.fileName || 'profile-image.jpg'
-      });
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Update local state with the public URL
-      setUserData(prevData => ({
-        ...prevData,
-        avatar: publicUrl
-      }));
-      
-      Alert.alert('Success', 'Profile picture updated successfully');
-    } catch (error) {
-      console.error('Error uploading avatar:', error);
-      Alert.alert('Error', 'Failed to upload profile picture');
-      // Revert to previous avatar on error
-      fetchUserProfile();
-    } finally {
-      setLoading(false);
+// Function to handle buffer-based avatar upload
+const handleAvatarUploadWithBase64 = async (asset) => {
+  try {
+    setLoading(true);
+    
+    // Update UI immediately to show the selected image
+    setUserData(prevData => ({
+      ...prevData,
+      avatar: asset.uri
+    }));
+    
+    // Get current user ID
+    const userId = await ProfileManager.getCurrentUserId();
+    if (!userId) {
+      throw new Error('User not authenticated');
     }
-  };
+    
+    // Determine file type and extension
+    const fileType = asset.type || 'image/jpeg';
+    const fileExt = fileType.split('/')[1] || 'jpg';
+    
+    // Create a unique filename
+    const fileName = `${userId}-${Date.now()}.${fileExt}`;
+    const filePath = `avatars/${fileName}`;
+    
+    console.log(`Uploading ${fileType} file to ${filePath}`);
+    console.log(`Base64 data length: ${asset.base64.length} characters`);
+    
+    // Convert base64 to buffer
+    // For React Native we need to use a different approach since Buffer isn't available
+    const base64Data = asset.base64;
+    
+    // For Expo, we need to use the Uint8Array approach
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    
+    // Upload the buffer to Supabase storage
+    const { data, error: uploadError } = await supabase.storage
+      .from('profileimages')
+      .upload(filePath, bytes.buffer, {
+        contentType: fileType,
+        cacheControl: '3600',
+        upsert: true
+      });
+    
+    if (uploadError) {
+      console.error("Upload error:", uploadError);
+      throw uploadError;
+    }
+    
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from('profileimages')
+      .getPublicUrl(filePath);
+    
+    const avatarUrl = urlData.publicUrl;
+    console.log("Avatar URL:", avatarUrl);
+    
+    // Update user profile
+    const { error: updateError } = await supabase
+      .from('users')
+      .update({ avatar_url: avatarUrl })
+      .eq('user_id', userId);
+    
+    if (updateError) {
+      console.error("Profile update error:", updateError);
+      throw updateError;
+    }
+    
+    // Update local state
+    setUserData(prevData => ({ 
+      ...prevData, 
+      avatar: avatarUrl 
+    }));
+    
+    Alert.alert("Success", "Profile picture updated successfully");
+  } catch (error) {
+    console.error("Avatar upload error:", error);
+    Alert.alert("Error", "Failed to upload profile picture: " + error.message);
+    fetchUserProfile();
+  } finally {
+    setLoading(false);
+  }
+};
+
+// Helper function to convert base64 to buffer (when working with Expo)
+function atob(input) {
+  // For React Native
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+  let output = '';
+  let i = 0;
+  
+  input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+  
+  while (i < input.length) {
+    const enc1 = chars.indexOf(input.charAt(i++));
+    const enc2 = chars.indexOf(input.charAt(i++));
+    const enc3 = chars.indexOf(input.charAt(i++));
+    const enc4 = chars.indexOf(input.charAt(i++));
+    
+    const chr1 = (enc1 << 2) | (enc2 >> 4);
+    const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+    const chr3 = ((enc3 & 3) << 6) | enc4;
+    
+    output += String.fromCharCode(chr1);
+    
+    if (enc3 !== 64) {
+      output += String.fromCharCode(chr2);
+    }
+    if (enc4 !== 64) {
+      output += String.fromCharCode(chr3);
+    }
+  }
+  
+  return output;
+}
 
   // Function to save profile changes using ProfileManager
   const saveProfile = async () => {
@@ -350,10 +453,10 @@ const EditProfileScreen = ({ navigation, route }) => {
 
   if (loading && !userData) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#357002" />
-          <Text style={styles.loadingText}>Loading profile...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading profile...</Text>
         </View>
       </SafeAreaView>
     );
@@ -361,11 +464,14 @@ const EditProfileScreen = ({ navigation, route }) => {
 
   if (!userData) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>Failed to load profile data.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchUserProfile}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+          <Text style={[styles.errorText, { color: theme.error }]}>Failed to load profile data.</Text>
+          <TouchableOpacity 
+            style={[styles.retryButton, { backgroundColor: theme.primary }]} 
+            onPress={fetchUserProfile}
+          >
+            <Text style={[styles.retryButtonText, { color: theme.surface }]}>Retry</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -373,129 +479,169 @@ const EditProfileScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header with back button */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: theme.surface, 
+        borderBottomColor: theme.border 
+      }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={28} color="black" />
+          <Ionicons name="chevron-back" size={28} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit profile</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Edit profile</Text>
         <View style={{ width: 28 }} />
       </View>
 
-      <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={[styles.scrollContainer, { backgroundColor: theme.background }]} 
+        showsVerticalScrollIndicator={false}
+      >
         {/* Profile picture and name card */}
-        <View style={styles.card}>
+        <View style={[styles.card, { 
+          backgroundColor: theme.surface,
+          shadowColor: theme.text
+        }]}>
           <View style={styles.profileSection}>
             <View style={styles.profileImageContainer}>
               {userData.avatar ? (
                 <Image source={{ uri: userData.avatar }} style={styles.profileImage} />
               ) : (
-                <View style={styles.placeholderImage}>
-                  <Ionicons name="person" size={60} color="#333" />
+                <View style={[styles.placeholderImage, { backgroundColor: isDarkMode ? '#444' : '#e0e0e0' }]}>
+                  <Ionicons name="person" size={60} color={isDarkMode ? '#aaa' : '#333'} />
                 </View>
               )}
               <TouchableOpacity onPress={handleImageSelection}>
-                <Text style={styles.editText}>Edit</Text>
+                <Text style={[styles.editText, { color: theme.primary }]}>Edit</Text>
               </TouchableOpacity>
             </View>
 
             <View style={styles.profileTextContainer}>
-              <Text style={styles.profileInstructionText}>
+              <Text style={[styles.profileInstructionText, { color: theme.textSecondary }]}>
                 Enter your name and add an optional profile picture
               </Text>
             </View>
           </View>
 
-          <View style={styles.separator} />
+          <View style={[styles.separator, { backgroundColor: theme.border }]} />
 
           {/* Name Input */}
           <TextInput
-            style={styles.nameInput}
+            style={[styles.nameInput, { color: theme.text }]}
             value={userData.fullName}
             onChangeText={(text) => setUserData({ ...userData, fullName: text })}
             placeholder="Full Name"
+            placeholderTextColor={theme.textSecondary}
           />
         </View>
 
         {/* Email - Non-editable */}
-        <Text style={styles.sectionLabel}>Email</Text>
-        <View style={styles.inputCard}>
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Email</Text>
+        <View style={[styles.inputCard, { 
+          backgroundColor: theme.surface,
+          shadowColor: theme.text
+        }]}>
           <TextInput
-            style={[styles.input, styles.disabledInput]}
+            style={[styles.input, styles.disabledInput, { color: isDarkMode ? '#888' : '#999' }]}
             value={userData.email}
             editable={false}
           />
         </View>
 
         {/* Phone number */}
-        <Text style={styles.sectionLabel}>Phone number</Text>
-        <View style={styles.inputCard}>
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Phone number</Text>
+        <View style={[styles.inputCard, { 
+          backgroundColor: theme.surface,
+          shadowColor: theme.text
+        }]}>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { color: theme.text }]}
             value={userData.phoneNumber}
             onChangeText={(text) => setUserData({ ...userData, phoneNumber: text })}
             keyboardType="phone-pad"
+            placeholderTextColor={theme.textSecondary}
           />
         </View>
 
         {/* Gender - Modified to use modal */}
-        <Text style={styles.sectionLabel}>Gender</Text>
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Gender</Text>
         <TouchableOpacity 
-          style={styles.inputCard}
+          style={[styles.inputCard, { 
+            backgroundColor: theme.surface,
+            shadowColor: theme.text
+          }]}
           onPress={() => setGenderModalVisible(true)}
         >
           <View style={styles.selectionField}>
-            <Text style={userData.gender ? styles.fieldValue : styles.fieldPlaceholder}>
+            <Text style={[
+              userData.gender ? styles.fieldValue : styles.fieldPlaceholder,
+              { color: userData.gender ? theme.text : theme.textSecondary }
+            ]}>
               {userData.gender || "Not set"}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color="#357002" />
+            <Ionicons name="chevron-forward" size={20} color={theme.primary} />
           </View>
         </TouchableOpacity>
 
         {/* Age - Added field */}
-        <Text style={styles.sectionLabel}>Age</Text>
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Age</Text>
         <TouchableOpacity 
-          style={styles.inputCard}
+          style={[styles.inputCard, { 
+            backgroundColor: theme.surface,
+            shadowColor: theme.text
+          }]}
           onPress={() => setAgeModalVisible(true)}
         >
           <View style={styles.selectionField}>
-            <Text style={userData.age ? styles.fieldValue : styles.fieldPlaceholder}>
+            <Text style={[
+              userData.age ? styles.fieldValue : styles.fieldPlaceholder,
+              { color: userData.age ? theme.text : theme.textSecondary }
+            ]}>
               {userData.age || "Not set"}
             </Text>
-            <Ionicons name="chevron-forward" size={20} color="#357002" />
+            <Ionicons name="chevron-forward" size={20} color={theme.primary} />
           </View>
         </TouchableOpacity>
 
         {/* County */}
-        <Text style={styles.sectionLabel}>County</Text>
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>County</Text>
         <TouchableOpacity 
-          style={[styles.inputCard, styles.disabledInput]}
+          style={[styles.inputCard, styles.disabledInput, { 
+            backgroundColor: theme.surface,
+            shadowColor: theme.text
+          }]}
           disabled={true}
         >
           <View style={styles.selectionField}>
-            <Text style={styles.fieldValue}>
+            <Text style={[styles.fieldValue, { color: theme.text }]}>
               {userData.county || "Nairobi City County"}
             </Text>
           </View>
         </TouchableOpacity>
 
         {/* Constituency */}
-        <Text style={styles.sectionLabel}>Constituency</Text>
-        <View style={styles.inputCard}>
-          <View style={styles.selectionField}>
-            <Text style={styles.fieldValue}>
-              {userData.constituency || 'Not set'}
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Constituency</Text>
+        <View style={[styles.inputCard, { 
+          backgroundColor: theme.surface,
+          shadowColor: theme.text
+        }]}>
+          <View style={styles.constituencyField}>
+            <View style={{flex: 1}}>
+              <Text style={[styles.fieldValue, { color: theme.text }]}>
+                {userData.constituency || 'Not set'}
+              </Text>
               {hasPendingRequest && (
-                <View style={styles.pendingBadgeContainer}>
-                  <View style={styles.pendingBadge}>
-                    <Text style={styles.pendingText}>Change Pending</Text>
-                  </View>
+                <View style={[styles.pendingBadge, { backgroundColor: isDarkMode ? '#5D4037' : '#FFC107' }]}>
+                  <Text style={[styles.pendingText, { color: isDarkMode ? '#FFF' : '#333' }]}>
+                    Requested: {pendingRequest?.requested_constituency}
+                  </Text>
+                  <Text style={[styles.pendingText, {fontSize: 10, color: isDarkMode ? '#FFF' : '#333'}]}>
+                    Status: Pending
+                  </Text>
                 </View>
               )}
-            </Text>
+            </View>
             <TouchableOpacity onPress={handleConstituencyChangeRequest}>
-              <Text style={[styles.linkText, { color: '#357002' }]}>
+              <Text style={[styles.linkText, { color: theme.primary }]}>
                 {hasPendingRequest ? 'View Request' : 'Change'}
               </Text>
             </TouchableOpacity>
@@ -503,8 +649,11 @@ const EditProfileScreen = ({ navigation, route }) => {
         </View>
 
         {/* Membership type - Color-coded */}
-        <Text style={styles.sectionLabel}>Membership type</Text>
-        <View style={styles.inputCard}>
+        <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Membership type</Text>
+        <View style={[styles.inputCard, { 
+          backgroundColor: theme.surface,
+          shadowColor: theme.text
+        }]}>
           <Text style={[styles.linkText, { color: getMembershipTypeColor() }]}>
             {userData.membershipType}
           </Text>
@@ -512,7 +661,7 @@ const EditProfileScreen = ({ navigation, route }) => {
 
         {/* Save button */}
         <TouchableOpacity 
-          style={styles.saveButton}
+          style={[styles.saveButton, { backgroundColor: theme.primary }]}
           onPress={saveProfile}
           disabled={loading}
         >
@@ -532,11 +681,11 @@ const EditProfileScreen = ({ navigation, route }) => {
         onRequestClose={() => setGenderModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Gender</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Select Gender</Text>
               <TouchableOpacity onPress={() => setGenderModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
             </View>
             
@@ -546,18 +695,24 @@ const EditProfileScreen = ({ navigation, route }) => {
                   key={gender}
                   style={[
                     styles.modalOption,
-                    selectedGender === gender && styles.selectedOption
+                    { borderBottomColor: theme.border },
+                    selectedGender === gender && [
+                      styles.selectedOption, 
+                      { backgroundColor: isDarkMode ? '#1e3a1e' : '#f0f9f0' }
+                    ]
                   ]}
                   onPress={() => handleGenderSelect(gender)}
                 >
                   <Text style={[
                     styles.modalOptionText,
-                    selectedGender === gender && styles.selectedOptionText
+                    { color: theme.text },
+                    selectedGender === gender && 
+                    [styles.selectedOptionText, { color: theme.primary }]
                   ]}>
                     {gender}
                   </Text>
                   {selectedGender === gender && (
-                    <Ionicons name="checkmark" size={20} color="#357002" />
+                    <Ionicons name="checkmark" size={20} color={theme.primary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -574,11 +729,11 @@ const EditProfileScreen = ({ navigation, route }) => {
         onRequestClose={() => setAgeModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Age</Text>
+          <View style={[styles.modalContent, { backgroundColor: theme.surface }]}>
+            <View style={[styles.modalHeader, { borderBottomColor: theme.border }]}>
+              <Text style={[styles.modalTitle, { color: theme.text }]}>Select Age</Text>
               <TouchableOpacity onPress={() => setAgeModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={theme.text} />
               </TouchableOpacity>
             </View>
             
@@ -588,18 +743,24 @@ const EditProfileScreen = ({ navigation, route }) => {
                   key={age}
                   style={[
                     styles.modalOption,
-                    selectedAge === age && styles.selectedOption
+                    { borderBottomColor: theme.border },
+                    selectedAge === age && [
+                      styles.selectedOption, 
+                      { backgroundColor: isDarkMode ? '#1e3a1e' : '#f0f9f0' }
+                    ]
                   ]}
                   onPress={() => handleAgeSelect(age)}
                 >
                   <Text style={[
                     styles.modalOptionText,
-                    selectedAge === age && styles.selectedOptionText
+                    { color: theme.text },
+                    selectedAge === age && 
+                    [styles.selectedOptionText, { color: theme.primary }]
                   ]}>
                     {age}
                   </Text>
                   {selectedAge === age && (
-                    <Ionicons name="checkmark" size={20} color="#357002" />
+                    <Ionicons name="checkmark" size={20} color={theme.primary} />
                   )}
                 </TouchableOpacity>
               ))}
@@ -837,17 +998,21 @@ const styles = StyleSheet.create({
     color: '#357002',
     fontWeight: '500',
   },
-  pendingBadgeContainer: {
-    marginLeft: 8,
+  constituencyField: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   pendingBadge: {
     backgroundColor: '#FFC107',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
+    paddingVertical: 4,
+    borderRadius: 4,
+    marginTop: 4,
+    maxWidth: '85%'
   },
   pendingText: {
-    color: '#fff',
+    color: '#333',
     fontSize: 12,
     fontWeight: '500',
   },

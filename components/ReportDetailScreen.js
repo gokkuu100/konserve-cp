@@ -1,25 +1,27 @@
+import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  Image,
-  ScrollView,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  Share,
   ActivityIndicator,
   Dimensions,
-  Linking
+  Image,
+  Linking,
+  SafeAreaView,
+  ScrollView,
+  Share,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import ReportsManager from '../supabase/manager/reports/ReportsManager';
+import { useTheme } from '../ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import ReportsManager from '../supabase/manager/reports/ReportsManager';
 
 const { width } = Dimensions.get('window');
 
 const ReportDetailScreen = ({ route, navigation }) => {
+  const { theme, isDarkMode } = useTheme();
   const { reportId } = route.params;
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -108,10 +110,10 @@ const ReportDetailScreen = ({ route, navigation }) => {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#3366CC" />
-          <Text style={styles.loadingText}>Loading report...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading report...</Text>
         </View>
       </SafeAreaView>
     );
@@ -119,26 +121,26 @@ const ReportDetailScreen = ({ route, navigation }) => {
 
   if (error || !report) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
           <TouchableOpacity 
             style={styles.backButton} 
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Report Details</Text>
+          <Text style={[styles.headerTitle, { color: theme.text }]}>Report Details</Text>
           <View style={styles.placeholder} />
         </View>
         
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={50} color="#D32F2F" />
-          <Text style={styles.errorText}>{error || 'Report not found'}</Text>
+          <Ionicons name="alert-circle-outline" size={50} color={theme.error} />
+          <Text style={[styles.errorText, { color: theme.error }]}>{error || 'Report not found'}</Text>
           <TouchableOpacity 
-            style={styles.goBackButton} 
+            style={[styles.goBackButton, { backgroundColor: theme.primary }]} 
             onPress={() => navigation.goBack()}
           >
-            <Text style={styles.goBackButtonText}>Return to Reports</Text>
+            <Text style={[styles.goBackButtonText, { color: theme.surface }]}>Return to Reports</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -146,24 +148,24 @@ const ReportDetailScreen = ({ route, navigation }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.surface} />
       
       {/* Top Navigation Bar */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: theme.surface, borderBottomColor: theme.border }]}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Report Details</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Report Details</Text>
         <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-          <Ionicons name="share-outline" size={24} color="#333" />
+          <Ionicons name="share-outline" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
       
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView style={[styles.scrollView, { backgroundColor: theme.background }]} showsVerticalScrollIndicator={false}>
         {/* Hero Image */}
         <Image
           source={{ uri: report.imageUrl }}
@@ -172,55 +174,57 @@ const ReportDetailScreen = ({ route, navigation }) => {
         />
         
         {/* Report Content */}
-        <View style={styles.contentContainer}>
+        <View style={[styles.contentContainer, { backgroundColor: theme.surface }]}>
           {/* Category Badge */}
-          <View style={styles.categoryContainer}>
-            <Text style={styles.category}>{report.category}</Text>
+          <View style={[styles.categoryContainer, { backgroundColor: isDarkMode ? theme.secondary : '#E8F5E9' }]}>
+            <Text style={[styles.category, { color: isDarkMode ? theme.surface : '#2E7D32' }]}>{report.category}</Text>
           </View>
           
           {/* Title */}
-          <Text style={styles.title}>{report.title}</Text>
+          <Text style={[styles.title, { color: theme.text }]}>{report.title}</Text>
           
           {/* Author and Date Info */}
           <View style={styles.metaContainer}>
             <View style={styles.authorContainer}>
-              <Ionicons name="person-outline" size={16} color="#666" />
-              <Text style={styles.metaText}>{report.author}</Text>
+              <Ionicons name="person-outline" size={16} color={theme.textSecondary} />
+              <Text style={[styles.metaText, { color: theme.textSecondary }]}>{report.author}</Text>
             </View>
             
             <View style={styles.dateContainer}>
-              <Ionicons name="calendar-outline" size={16} color="#666" />
-              <Text style={styles.metaText}>{formatDate(report.created_at)}</Text>
+              <Ionicons name="calendar-outline" size={16} color={theme.textSecondary} />
+              <Text style={[styles.metaText, { color: theme.textSecondary }]}>{formatDate(report.created_at)}</Text>
             </View>
             
             {report.location && (
               <View style={styles.locationContainer}>
-                <Ionicons name="location-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>{report.location}</Text>
+                <Ionicons name="location-outline" size={16} color={theme.textSecondary} />
+                <Text style={[styles.metaText, { color: theme.textSecondary }]}>{report.location}</Text>
               </View>
             )}
           </View>
           
           {/* Content */}
           <View style={styles.reportContent}>
-            <Text style={styles.contentText}>{report.content}</Text>
+            <Text style={[styles.contentText, { color: theme.text }]}>{report.content}</Text>
           </View>
           
           {/* Action Buttons */}
           <View style={styles.actionButtons}>
-            
-            <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-              <Ionicons name="share-social-outline" size={20} color="#023020" />
-              <Text style={styles.actionText}>Share</Text>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: isDarkMode ? theme.secondary : '#f0f0f0' }]} 
+              onPress={handleShare}
+            >
+              <Ionicons name="share-social-outline" size={20} color={theme.primary} />
+              <Text style={[styles.actionText, { color: theme.primary }]}>Share</Text>
             </TouchableOpacity>
             
             {report.website_url && (
               <TouchableOpacity 
-                style={styles.actionButton}
+                style={[styles.actionButton, { backgroundColor: isDarkMode ? theme.secondary : '#f0f0f0' }]}
                 onPress={() => Linking.openURL(report.website_url)}
               >
-                <Ionicons name="globe-outline" size={20} color="#3366CC" />
-                <Text style={styles.actionText}>Website</Text>
+                <Ionicons name="globe-outline" size={20} color={theme.primary} />
+                <Text style={[styles.actionText, { color: theme.primary }]}>Website</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -228,12 +232,12 @@ const ReportDetailScreen = ({ route, navigation }) => {
           {/* Related Reports Section */}
           {relatedReports.length > 0 && (
             <View style={styles.relatedReportsSection}>
-              <Text style={styles.sectionTitle}>Related Reports</Text>
+              <Text style={[styles.sectionTitle, { color: theme.text }]}>Related Reports</Text>
               <View style={styles.relatedReportsContainer}>
                 {relatedReports.map((item) => (
                   <TouchableOpacity 
                     key={item.id}
-                    style={styles.relatedReportCard}
+                    style={[styles.relatedReportCard, { backgroundColor: theme.background }]}
                     onPress={() => handleRelatedReportPress(item.id)}
                   >
                     <Image 
@@ -241,8 +245,10 @@ const ReportDetailScreen = ({ route, navigation }) => {
                       style={styles.relatedReportImage}
                       defaultSource={require('../assets/resized.jpg')}
                     />
-                    <Text style={styles.relatedReportCategory}>{item.category}</Text>
-                    <Text style={styles.relatedReportTitle} numberOfLines={2}>
+                    <Text style={[styles.relatedReportCategory, { color: theme.primary, backgroundColor: isDarkMode ? theme.secondary : '#E8F5E9' }]}>
+                      {item.category}
+                    </Text>
+                    <Text style={[styles.relatedReportTitle, { color: theme.text }]} numberOfLines={2}>
                       {item.title}
                     </Text>
                   </TouchableOpacity>

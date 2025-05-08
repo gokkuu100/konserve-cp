@@ -1,31 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
+  Animated,
+  Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
   StyleSheet,
-  View,
   Text,
   TextInput,
   TouchableOpacity,
-  Image,
-  ScrollView,
-  ActivityIndicator,
-  Modal,
-  Animated,
-  Alert,
-  SafeAreaView,
-  Platform,
-  KeyboardAvoidingView
+  View
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
-import { Ionicons, MaterialIcons, FontAwesome5, Feather } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
-import ReportsManager from '../supabase/manager/reports/ReportsManager';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabase/config/supabaseConfig';
+import ReportsManager from '../supabase/manager/reports/ReportsManager';
 
 const ReportEnvironmentScreen = ({ navigation }) => {
   const { user, userId, isAuthenticated, loading } = useAuth();
   // State variables
   const [images, setImages] = useState([]);
+  const [imagesData, setImagesData] = useState([]);
   const [description, setDescription] = useState('');
   const [location, setLocation] = useState(null);
   const [isUsingLiveLocation, setIsUsingLiveLocation] = useState(false);
@@ -134,7 +136,7 @@ const ReportEnvironmentScreen = ({ navigation }) => {
     }
   };
 
-  // Pick images from gallery
+  // Updated pickImage function to request base64 data
   const pickImage = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({
@@ -144,6 +146,7 @@ const ReportEnvironmentScreen = ({ navigation }) => {
         quality: 0.8,
         allowsMultipleSelection: true,
         selectionLimit: 5 - images.length,
+        base64: true, // Request base64 data
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -153,7 +156,11 @@ const ReportEnvironmentScreen = ({ navigation }) => {
           return;
         }
         
+        // Update the images array with URIs for display
         setImages([...images, ...result.assets.map(asset => asset.uri)]);
+        
+        // Also store the full image data including base64
+        setImagesData([...imagesData, ...result.assets]);
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -161,7 +168,7 @@ const ReportEnvironmentScreen = ({ navigation }) => {
     }
   };
 
-  // Take photo with camera
+  // Updated takePhoto function to request base64 data
   const takePhoto = async () => {
     try {
       if (images.length >= 5) {
@@ -173,10 +180,12 @@ const ReportEnvironmentScreen = ({ navigation }) => {
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8,
+        base64: true, // Request base64 data
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setImages([...images, result.assets[0].uri]);
+        setImagesData([...imagesData, result.assets[0]]);
       }
     } catch (error) {
       console.error('Error taking photo:', error);
@@ -184,11 +193,15 @@ const ReportEnvironmentScreen = ({ navigation }) => {
     }
   };
 
-  // Remove image
+  // Updated removeImage function to remove from both arrays
   const removeImage = (index) => {
     const newImages = [...images];
     newImages.splice(index, 1);
     setImages(newImages);
+    
+    const newImagesData = [...imagesData];
+    newImagesData.splice(index, 1);
+    setImagesData(newImagesData);
   };
 
   // Toggle map view
@@ -216,7 +229,90 @@ const ReportEnvironmentScreen = ({ navigation }) => {
     })();
   };
 
-  // Submit report
+  // Helper function to convert base64 to buffer (using the same function from EditProfileScreen)
+  function atob(input) {
+    // For React Native
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+    let output = '';
+    let i = 0;
+    
+    input = input.replace(/[^A-Za-z0-9\+\/\=]/g, '');
+    
+    while (i < input.length) {
+      const enc1 = chars.indexOf(input.charAt(i++));
+      const enc2 = chars.indexOf(input.charAt(i++));
+      const enc3 = chars.indexOf(input.charAt(i++));
+      const enc4 = chars.indexOf(input.charAt(i++));
+      
+      const chr1 = (enc1 << 2) | (enc2 >> 4);
+      const chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+      const chr3 = ((enc3 & 3) << 6) | enc4;
+      
+      output += String.fromCharCode(chr1);
+      
+      if (enc3 !== 64) {
+        output += String.fromCharCode(chr2);
+      }
+      if (enc4 !== 64) {
+        output += String.fromCharCode(chr3);
+      }
+    }
+    
+    return output;
+  }
+
+  // Function to upload a single image using buffer approach
+  const uploadImageWithBuffer = async (imageAsset, index) => {
+    try {
+      if (!imageAsset.base64) {
+        throw new Error(`Image ${index+1} has no base64 data`);
+      }
+      
+      // Determine file type and extension
+      const fileType = imageAsset.type || 'image/jpeg';
+      const fileExt = fileType.split('/')[1] || 'jpg';
+      
+      // Create unique filename
+      const fileName = `report-${userId}-${Date.now()}-${index}.${fileExt}`;
+      const filePath = `envreportimages/${fileName}`;
+      
+      console.log(`Uploading image ${index+1} to reportcaseimages/${filePath}`);
+      
+      // Convert base64 to buffer
+      const base64Data = imageAsset.base64;
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+      
+      // Upload the buffer to Supabase storage
+      const { data, error: uploadError } = await supabase.storage
+        .from('reportcaseimages')
+        .upload(filePath, bytes.buffer, {
+          contentType: fileType,
+          cacheControl: '3600',
+          upsert: true
+        });
+      
+      if (uploadError) {
+        console.error(`Error uploading image ${index+1}:`, uploadError);
+        throw uploadError;
+      }
+      
+      // Get public URL
+      const { data: urlData } = supabase.storage
+        .from('reportcaseimages')
+        .getPublicUrl(filePath);
+      
+      return urlData.publicUrl;
+    } catch (error) {
+      console.error(`Error processing image ${index+1}:`, error);
+      throw error;
+    }
+  };
+
+  // Updated submit report function to use the updated ReportsManager function
   const submitReport = async () => {
     try {
       if (!description) {
@@ -236,14 +332,7 @@ const ReportEnvironmentScreen = ({ navigation }) => {
 
       setSubmitting(true);
       
-      // Format images for upload
-      const formattedImages = images.map(uri => ({
-        uri,
-        type: 'image/jpeg',
-        name: `image-${Date.now()}-${Math.random().toString(36).substring(7)}.jpg`
-      }));
-      
-      // Create report data object aligned with database schema
+      // Prepare the report data for submission
       const reportData = {
         incident_type: incidentType,
         description: description,
@@ -253,18 +342,23 @@ const ReportEnvironmentScreen = ({ navigation }) => {
         severity: severity,
         user_id: userId,
         status: 'pending',
-        images: formattedImages
+        // Pass the images data for buffer-based upload
+        imagesData: imagesData
       };
       
-      // Submit report to Supabase
-      const { data, error } = await ReportsManager.submitEnvironmentalCase(reportData);
+      console.log('Submitting environmental report...');
       
-      if (error) {
-        console.error('Error submitting report:', error);
-        Alert.alert('Submission Error', error.message || 'Failed to submit your report. Please try again.');
+      // Submit report using the existing ReportsManager method
+      const { data: reportResult, error: reportError } = await ReportsManager.submitEnvironmentalCase(reportData);
+      
+      if (reportError) {
+        console.error('Error submitting report:', reportError);
+        Alert.alert('Submission Error', reportError.message || 'Failed to submit your report. Please try again.');
         setSubmitting(false);
         return;
       }
+      
+      console.log('Report submitted successfully:', reportResult);
       
       // Show success modal
       setShowModal(true);
@@ -273,6 +367,7 @@ const ReportEnvironmentScreen = ({ navigation }) => {
       setTimeout(() => {
         setShowModal(false);
         setImages([]);
+        setImagesData([]);
         setDescription('');
         setIncidentType('');
         setSeverity('medium');
@@ -284,7 +379,7 @@ const ReportEnvironmentScreen = ({ navigation }) => {
       
     } catch (error) {
       console.error('Error submitting report:', error);
-      Alert.alert('Error', error.message);
+      Alert.alert('Error', error.message || 'An unexpected error occurred');
     } finally {
       setSubmitting(false);
     }

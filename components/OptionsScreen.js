@@ -1,10 +1,12 @@
+import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, ScrollView, SafeAreaView, Alert } from 'react-native';
-import { Ionicons, MaterialIcons, Feather } from '@expo/vector-icons';
+import { Alert, Image, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
+import { useTheme } from '../ThemeContext';
 
 const OptionsScreen = ({ navigation, route }) => {
+  const { theme, isDarkMode } = useTheme();
   const { user: authUser, userId, isAuthenticated, loading: authLoading, signOut, signIn, signUp } = useAuth();
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState({
@@ -72,19 +74,19 @@ const OptionsScreen = ({ navigation, route }) => {
     
     if (membershipType === 'standard') {
       return (
-        <Text style={styles.membershipText}>
+        <Text style={[styles.membershipText, { color: theme.text }]}>
           Membership Type: <Text style={styles.standardMembership}>standard</Text>
         </Text>
       );
     } else if (membershipType === 'gold') {
       return (
-        <Text style={styles.membershipText}>
+        <Text style={[styles.membershipText, { color: theme.text }]}>
           Membership Type: <Text style={styles.goldMembership}>gold</Text>
         </Text>
       );
     } else {
       return (
-        <Text style={styles.membershipText}>
+        <Text style={[styles.membershipText, { color: theme.text }]}>
           Membership Type: {membershipType}
         </Text>
       );
@@ -113,20 +115,23 @@ const OptionsScreen = ({ navigation, route }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Back button */}
       <TouchableOpacity 
         style={styles.backButton} 
         onPress={handleBackToHome}
       >
-        <Ionicons name="arrow-back" size={24} color="#333" />
-        <Text style={styles.backButtonText}>Home</Text>
+        <Ionicons name="arrow-back" size={24} color={theme.text} />
+        <Text style={[styles.backButtonText, { color: theme.text }]}>Home</Text>
       </TouchableOpacity>
 
-      <View style={styles.topSection}>
+      <View style={[styles.topSection, { 
+        backgroundColor: theme.surface, 
+        borderBottomColor: theme.border 
+      }]}>
         <View style={styles.userInfoContainer}>
           <View>
-            <Text style={styles.userName}>{user.fullName}</Text>
+            <Text style={[styles.userName, { color: theme.text }]}>{user.fullName}</Text>
             {user.membershipType && (
               <View style={styles.ratingContainer}>
                 {renderMembershipType()}
@@ -134,49 +139,62 @@ const OptionsScreen = ({ navigation, route }) => {
             )}
           </View>
           
-          <TouchableOpacity style={styles.avatarContainer} onPress={handleEditProfile} >
-                {user.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatar} />
-                ) : (
-                <View style={styles.placeholderAvatar}>
-                    <Feather name="user" size={30} color="#ccc" />
-                </View>
-                )}
+          <TouchableOpacity style={styles.avatarContainer} onPress={handleEditProfile}>
+            {user.avatar ? (
+              <Image source={{ uri: user.avatar }} style={styles.avatar} />
+            ) : (
+              <View style={[styles.placeholderAvatar, { backgroundColor: isDarkMode ? '#444' : '#e1e1e1' }]}>
+                <Feather name="user" size={30} color={isDarkMode ? '#aaa' : '#ccc'} />
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>
 
-      <ScrollView style={styles.scrollContent}>
+      <ScrollView style={[styles.scrollContent, { backgroundColor: theme.background }]}>
         {/* Option Cards */}
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('ReportEnvironment')}>
+        <TouchableOpacity 
+          style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.text }]} 
+          onPress={() => navigation.navigate('ReportEnvironment')}
+        >
           <View style={styles.cardContent}>
             <View>
-              <Text style={styles.cardTitle}>Report Environmental Case</Text>
-              <Text style={styles.cardSubtitle}>Report environmental cases directly to agencies</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Report Environmental Case</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Report environmental cases directly to agencies</Text>
             </View>
             <View style={styles.cardIcon}>
-              <MaterialIcons name="nature-people" size={40} color="#4CAF50" />
+              <MaterialIcons name="nature-people" size={40} color={theme.primary} />
             </View>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('Feedback')}>
+        <TouchableOpacity 
+          style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.text }]} 
+          onPress={() => navigation.navigate('Feedback')}
+        >
           <View style={styles.cardContent}>
             <View>
-              <Text style={styles.cardTitle}>Provide Feedback</Text>
-              <Text style={styles.cardSubtitle}>Help us improve our services</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Provide Feedback</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Help us improve our services</Text>
             </View>
             <View style={styles.cardIcon}>
-              <Ionicons name="chatbubble-ellipses-outline" size={40} color="#2196F3" />
+              <Ionicons 
+                name="chatbubble-ellipses-outline" 
+                size={40} 
+                color={isDarkMode ? theme.secondary : "#2196F3"} 
+              />
             </View>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('InviteFriends')}>
+        <TouchableOpacity 
+          style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.text }]} 
+          onPress={() => navigation.navigate('InviteFriends')}
+        >
           <View style={styles.cardContent}>
             <View>
-              <Text style={styles.cardTitle}>Invite friends</Text>
-              <Text style={styles.cardSubtitle}>Get rewarded points when you invite your friends to our application</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Invite friends</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Get rewarded points when you invite your friends to our application</Text>
             </View>
             <Image 
               source={require('../assets/invitefriends.png')} 
@@ -186,42 +204,63 @@ const OptionsScreen = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('EcoImpact')}>
+        <TouchableOpacity 
+          style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.text }]} 
+          onPress={() => navigation.navigate('EcoImpact')}
+        >
           <View style={styles.cardContent}>
             <View>
-              <Text style={styles.cardTitle}>Estimated CO₂ saved</Text>
-              <Text style={styles.cardSubtitle}>Track your environmental impact</Text>
+              <Text style={[styles.cardTitle, { color: theme.text }]}>Estimated CO₂ saved</Text>
+              <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>Track your environmental impact</Text>
             </View>
             <View style={styles.ecoContainer}>
-              <Feather name="leaf" size={20} color="#4CAF50" />
-              <Text style={styles.ecoText}>0 g</Text>
+              <Feather name="leaf" size={20} color={theme.primary} />
+              <Text style={[styles.ecoText, { color: theme.text }]}>0 g</Text>
             </View>
           </View>
         </TouchableOpacity>
 
         {/* Bottom Options */}
         <View style={styles.bottomOptions}>
-          <TouchableOpacity style={styles.bottomOption} onPress={() => navigation.navigate('OrgMessages')}>
-            <Ionicons name="chatbox-ellipses-outline" size={24} color="black" />
+          <TouchableOpacity 
+            style={[styles.bottomOption, { 
+              backgroundColor: theme.surface, 
+              borderBottomColor: theme.border 
+            }]} 
+            onPress={() => navigation.navigate('OrgMessages')}
+          >
+            <Ionicons name="chatbox-ellipses-outline" size={24} color={theme.text} />
             <View style={styles.bottomOptionTextContainer}>
-              <Text style={styles.bottomOptionTitle}>Messages</Text>
-              <Text style={styles.bottomOptionSubtitle}>Receive direct messages from environmental agencies</Text>
+              <Text style={[styles.bottomOptionTitle, { color: theme.text }]}>Messages</Text>
+              <Text style={[styles.bottomOptionSubtitle, { color: theme.textSecondary }]}>Receive direct messages from environmental agencies</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.bottomOption} onPress={() => navigation.navigate('Settings')}>
-            <Ionicons name="settings-outline" size={24} color="black" />
+          <TouchableOpacity 
+            style={[styles.bottomOption, { 
+              backgroundColor: theme.surface, 
+              borderBottomColor: theme.border 
+            }]} 
+            onPress={() => navigation.navigate('Settings')}
+          >
+            <Ionicons name="settings-outline" size={24} color={theme.text} />
             <View style={styles.bottomOptionTextContainer}>
-              <Text style={styles.bottomOptionTitle}>Settings</Text>
-              <Text style={styles.bottomOptionSubtitle}>App preferences and account</Text>
+              <Text style={[styles.bottomOptionTitle, { color: theme.text }]}>Settings</Text>
+              <Text style={[styles.bottomOptionSubtitle, { color: theme.textSecondary }]}>App preferences and account</Text>
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.bottomOption} onPress={handleSignOut}>
-            <Ionicons name="log-out-outline" size={24} color="black" />
+          <TouchableOpacity 
+            style={[styles.bottomOption, { 
+              backgroundColor: theme.surface, 
+              borderBottomColor: theme.border 
+            }]} 
+            onPress={handleSignOut}
+          >
+            <Ionicons name="log-out-outline" size={24} color={theme.text} />
             <View style={styles.bottomOptionTextContainer}>
-              <Text style={styles.bottomOptionTitle}>Sign Out</Text>
-              <Text style={styles.bottomOptionSubtitle}>Log out from your account</Text>
+              <Text style={[styles.bottomOptionTitle, { color: theme.text }]}>Sign Out</Text>
+              <Text style={[styles.bottomOptionSubtitle, { color: theme.textSecondary }]}>Log out from your account</Text>
             </View>
           </TouchableOpacity>
         </View>

@@ -18,8 +18,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase/config/supabaseConfig';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import MessageManager from '../supabase/manager/messaging/MessageManager';
+import { useTheme } from '../ThemeContext';
 
 const ChatComponent = () => {
+  const { theme, isDarkMode } = useTheme();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -478,7 +480,7 @@ const ChatComponent = () => {
   
   // Add a header with sign out button and constituency information
   const renderHeader = () => (
-    <View style={styles.headerContainer}>
+    <View style={[styles.headerContainer, { backgroundColor: theme.primary }]}>
       <Text style={styles.headerTitle}>Chat</Text>
       {userConstituency ? (
         <View style={styles.constituencyContainer}>
@@ -538,18 +540,25 @@ const ChatComponent = () => {
           <View style={styles.bubbleWrapper}>
             {/* Sender name for other users' first message in a sequence */}
             {!item.isCurrentUser && shouldShowSenderInfo && (
-              <Text style={styles.senderName}>{item.sender}</Text>
+              <Text style={[styles.senderName, { color: theme.primary }]}>{item.sender}</Text>
             )}
             
             {/* Message bubble */}
             <View style={[
               styles.messageBubble,
-              item.isCurrentUser ? styles.userBubble : styles.otherBubble,
+              item.isCurrentUser ? 
+                [styles.userBubble, { backgroundColor: theme.primary }] : 
+                [styles.otherBubble, { 
+                  backgroundColor: isDarkMode ? theme.surface : '#ffffff',
+                  borderColor: theme.border
+                }],
               isOptimistic && styles.optimisticBubble // Add style for optimistic messages
             ]}>
               <Text style={[
                 styles.messageText,
-                item.isCurrentUser ? styles.userMessageText : styles.otherMessageText
+                item.isCurrentUser ? 
+                  styles.userMessageText : 
+                  { color: theme.text }
               ]}>
                 {item.text}
               </Text>
@@ -559,7 +568,7 @@ const ChatComponent = () => {
             <View style={styles.messageFooter}>
               <Text style={[
                 styles.messageTimestamp,
-                item.isCurrentUser ? styles.userTimestamp : styles.otherTimestamp
+                { color: theme.textSecondary }
               ]}>
                 {isOptimistic ? 'Sending...' : item.timestamp}
               </Text>
@@ -567,7 +576,7 @@ const ChatComponent = () => {
               {isOptimistic && (
                 <ActivityIndicator 
                   size="small" 
-                  color={item.isCurrentUser ? '#bbb' : '#4CAF50'} 
+                  color={item.isCurrentUser ? '#fff' : theme.primary} 
                   style={styles.sendingIndicator} 
                 />
               )}
@@ -664,19 +673,19 @@ const ChatComponent = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {!initialCheckDone || (!isAuthenticated && !user) ? (
         // Show authentication checking UI
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#357002" />
-          <Text style={styles.loadingText}>Checking authentication...</Text>
+        <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Checking authentication...</Text>
         </View>
       ) : !isAuthenticated || !user ? (
         // Show login prompt if not authenticated
-        <View style={styles.loadingContainer}>
-          <Text style={styles.authRequiredText}>Authentication required</Text>
+        <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+          <Text style={[styles.authRequiredText, { color: theme.text }]}>Authentication required</Text>
           <TouchableOpacity 
-            style={styles.loginButton}
+            style={[styles.loginButton, { backgroundColor: theme.primary }]}
             onPress={() => navigation.replace('Login')}
           >
             <Text style={styles.loginButtonText}>Go to Login</Text>
@@ -692,13 +701,13 @@ const ChatComponent = () => {
             keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
           >
             {isLoading ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#357002" />
-                <Text style={styles.loadingText}>Loading messages...</Text>
+              <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+                <ActivityIndicator size="large" color={theme.primary} />
+                <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading messages...</Text>
               </View>
             ) : messages.length === 0 ? (
-              <View style={styles.emptyStateContainer}>
-                <Text style={styles.emptyStateText}>No messages yet. Be the first to send one!</Text>
+              <View style={[styles.emptyStateContainer, { backgroundColor: theme.background }]}>
+                <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>No messages yet. Be the first to send one!</Text>
               </View>
             ) : (
               <FlatList
@@ -706,7 +715,7 @@ const ChatComponent = () => {
                 data={messages}
                 renderItem={renderMessage}
                 keyExtractor={item => item.id.toString()}
-                contentContainerStyle={styles.messagesList}
+                contentContainerStyle={[styles.messagesList, { backgroundColor: theme.background }]}
                 onRefresh={loadMessages}
                 refreshing={isLoading}
                 onScroll={handleMessageScroll}
@@ -714,22 +723,31 @@ const ChatComponent = () => {
               />
             )}
             
-            <View style={styles.inputContainer}>
+            <View style={[styles.inputContainer, { 
+              backgroundColor: isDarkMode ? '#1f1f1f' : theme.surface,
+              borderTopColor: theme.border
+            }]}>
               <TouchableOpacity style={styles.attachButton}>
-                <Text style={styles.attachIcon}>📎</Text>
+                <Text style={[styles.attachIcon, { color: theme.textSecondary }]}>📎</Text>
               </TouchableOpacity>
               
               <TextInput
-                style={styles.textInput}
+                style={[styles.textInput, { 
+                  backgroundColor: isDarkMode ? '#333333' : theme.background,
+                  color: theme.text 
+                }]}
                 value={inputMessage}
                 onChangeText={setInputMessage}
                 placeholder="Your message"
-                placeholderTextColor="#999"
+                placeholderTextColor={theme.textSecondary}
                 multiline
               />
               
               <TouchableOpacity 
-                style={[styles.sendButton, isSending && styles.sendingButton]}
+                style={[
+                  styles.sendButton, 
+                  isSending && [styles.sendingButton, { backgroundColor: theme.primary }]
+                ]}
                 onPress={handleSendMessage}
                 disabled={!inputMessage.trim() || isSending}
               >
@@ -738,7 +756,8 @@ const ChatComponent = () => {
                 ) : (
                   <Text style={[
                     styles.sendButtonText,
-                    !inputMessage.trim() && styles.sendButtonDisabled
+                    { color: theme.primary },
+                    !inputMessage.trim() && { color: theme.textSecondary }
                   ]}>
                     Send
                   </Text>
@@ -755,7 +774,6 @@ const ChatComponent = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
   },
   keyboardAvoid: {
     flex: 1,
@@ -767,7 +785,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 10,
-    color: '#666',
   },
   emptyStateContainer: {
     flex: 1,

@@ -1,25 +1,27 @@
 import React from 'react';
-import { 
-  StyleSheet, 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  ScrollView, 
-  Image, 
-  SafeAreaView 
+import {
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
+import { useTheme } from '../ThemeContext';
 
 const ServiceCard = ({ title, subtitle, buttonText, imageSource, onPress }) => {
+    const { theme } = useTheme();
     return (
-      <View style={styles.card}>
+      <View style={[styles.card, { backgroundColor: theme.surface, shadowColor: theme.text }]}>
         <View style={styles.cardContent}>
-          <Text style={styles.cardTitle}>{title}</Text>
-          <Text style={styles.cardSubtitle}>{subtitle}</Text>
-          <TouchableOpacity style={styles.button} onPress={onPress}>
-            <Text style={styles.buttonText}>{buttonText}</Text>
+          <Text style={[styles.cardTitle, { color: theme.text }]}>{title}</Text>
+          <Text style={[styles.cardSubtitle, { color: theme.textSecondary }]}>{subtitle}</Text>
+          <TouchableOpacity style={[styles.button, { backgroundColor: theme.secondary + '30' }]} onPress={onPress}>
+            <Text style={[styles.buttonText, { color: theme.primary }]}>{buttonText}</Text>
           </TouchableOpacity>
         </View>
-        <View style={styles.imageContainer}>
+        <View style={[styles.imageContainer, { backgroundColor: theme.background }]}>
           <Image
             source={imageSource}
             style={styles.cardImage}
@@ -31,8 +33,12 @@ const ServiceCard = ({ title, subtitle, buttonText, imageSource, onPress }) => {
   };
 
 const ServiceOption = ({ title, imageSource, onPress }) => {
+  const { theme } = useTheme();
   return (
-    <TouchableOpacity style={styles.serviceOption} onPress={onPress}>
+    <TouchableOpacity 
+      style={[styles.serviceOption, { backgroundColor: theme.surface, shadowColor: theme.text }]} 
+      onPress={onPress}
+    >
       <View style={styles.serviceImageContainer}>
         <Image 
           source={imageSource} 
@@ -40,19 +46,21 @@ const ServiceOption = ({ title, imageSource, onPress }) => {
           resizeMode="contain"
         />
       </View>
-      <Text style={styles.serviceTitle}>{title}</Text>
+      <Text style={[styles.serviceTitle, { color: theme.text }]}>{title}</Text>
     </TouchableOpacity>
   );
 };
 
 const Services = ({ navigation }) => {
+  const { theme } = useTheme();
+  
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={styles.header}>Services</Text>
+        <Text style={[styles.header, { color: theme.text }]}>Services</Text>
 
         {/* Section 1: Map Feature */}
-        <Text style={styles.sectionTitle}>Find Recycling Centers</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Find Recycling Centers</Text>
         <ServiceCard 
           title="Locate recycling centers near you"
           subtitle="Find pinpoints to various recycling centres around Nairobi"
@@ -60,10 +68,10 @@ const Services = ({ navigation }) => {
           imageSource={require('../assets/map.png')}
           onPress={() => navigation.navigate('Maps')}
         />
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         {/* Section 2: Collection Agencies & Messages */}
-        <Text style={styles.sectionTitle}>Manage Waste Collection</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Manage Waste Collection</Text>
         <View style={styles.serviceOptionsContainer}>
           <ServiceOption 
             title="Collection Agencies"
@@ -76,10 +84,10 @@ const Services = ({ navigation }) => {
             onPress={() => navigation.navigate('Messages')}
           />
         </View>
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         {/* Section 3: Calendar/Schedule Feature */}
-        <Text style={styles.sectionTitle}>Schedule Collection</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Schedule Collection</Text>
         <ServiceCard 
           title="Plan your waste collection"
           subtitle="Select convenient collection days from calendar"
@@ -87,10 +95,10 @@ const Services = ({ navigation }) => {
           onPress={() => navigation.navigate('WasteCalendar')}
           imageSource={require('../assets/calendar.png')}
         />
-        <View style={styles.divider} />
+        <View style={[styles.divider, { backgroundColor: theme.border }]} />
 
         {/* Section 4: Feedback & Reports */}
-        <Text style={styles.sectionTitle}>Service Feedback</Text>
+        <Text style={[styles.sectionTitle, { color: theme.text }]}>Service Feedback</Text>
         <View style={styles.serviceOptionsContainer}>
           <ServiceOption 
             title="Submit Feedback"

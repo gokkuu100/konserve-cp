@@ -1,69 +1,73 @@
-import React, { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   Modal,
   ScrollView,
-  ActivityIndicator,
-  Alert
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import LocationSelectionModal from './LocationSelectionModal';
-import ConstituencyManager from '../supabase/manager/location/ConstituencyManager';
 import { useAuth } from '../contexts/AuthContext';
+import ConstituencyManager from '../supabase/manager/constituencychange/ConstituencyManager';
+import LocationSelectionModal from './LocationSelectionModal';
 
 const ConstituencyChangeRequest = ({ visible, onClose, currentConstituency }) => {
-  const { user, userId, isAuthenticated } = useAuth();
+  const { userId } = useAuth();
   const [reason, setReason] = useState('');
-  const [newConstituency, setNewConstituency] = useState('');
+  const [selectedConstituency, setSelectedConstituency] = useState('');
   const [loading, setLoading] = useState(false);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
 
+  // Reset form when modal opens
+  useEffect(() => {
+    if (visible) {
+      setReason('');
+      setSelectedConstituency('');
+    }
+  }, [visible]);
+
   const handleSubmit = async () => {
-    if (!newConstituency) {
-      Alert.alert('Error', 'Please select a new constituency');
+    if (!selectedConstituency) {
+      Alert.alert('Missing Field', 'Please select a new constituency');
       return;
     }
-
+    
+    if (selectedConstituency === currentConstituency) {
+      Alert.alert('Same Constituency', 'Please select a different constituency than your current one');
+      return;
+    }
+    
     if (!reason.trim()) {
-      Alert.alert('Error', 'Please provide a reason for changing your constituency');
+      Alert.alert('Missing Field', 'Please provide a reason for your change request');
       return;
     }
-
-    setLoading(true);
+    
     try {
-      // Check if user is authenticated
-      if (!isAuthenticated || !userId) {
-        throw new Error('User not authenticated');
-      }
-
-      // Submit change request to Supabase using ConstituencyManager
-      const { success, error } = await ConstituencyManager.submitConstituencyChangeRequest({
-        userId: userId,
-        currentConstituency: currentConstituency,
-        requestedConstituency: newConstituency,
-        reason: reason
+      setLoading(true);
+      
+      const { success, error } = await ConstituencyManager.submitChangeRequest({
+        userId, 
+        currentConstituency, 
+        requestedConstituency: selectedConstituency, 
+        reason: reason.trim()
       });
-
+      
       if (!success) {
         throw new Error(error?.message || 'Failed to submit request');
       }
-
+      
       Alert.alert(
         'Request Submitted',
-        'Your constituency change request has been submitted and is pending approval.',
-        [{ text: 'OK', onPress: () => {
-          setReason('');
-          setNewConstituency('');
-          onClose(true); // Pass true to indicate successful submission
-        }}]
+        'Your constituency change request has been submitted successfully and is pending approval.',
+        [{ text: 'OK', onPress: () => onClose(true) }]
       );
     } catch (error) {
-      console.error('Error submitting constituency change request:', error);
-      Alert.alert('Error', error.message || 'Failed to submit request. Please try again.');
+      console.error('Error submitting request:', error);
+      Alert.alert('Error', error.message || 'Failed to submit request');
     } finally {
       setLoading(false);
     }
@@ -74,51 +78,47 @@ const ConstituencyChangeRequest = ({ visible, onClose, currentConstituency }) =>
       animationType="slide"
       transparent={true}
       visible={visible}
-      onRequestClose={onClose}
+      onRequestClose={() => onClose(false)}
     >
-      <View style={styles.modalContainer}>
+      <View style={styles.modalOverlay}>
         <View style={styles.modalContent}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Request Constituency Change</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={() => onClose(false)}>
               <Ionicons name="close" size={24} color="#333" />
             </TouchableOpacity>
           </View>
-
+          
           <ScrollView style={styles.formContainer}>
-            <Text style={styles.infoText}>
-              Changing your constituency requires approval. Please provide the following information.
-            </Text>
-
-            <View style={styles.currentLocationContainer}>
-              <Text style={styles.label}>Current Constituency:</Text>
-              <Text style={styles.currentLocation}>{currentConstituency}</Text>
+            <Text style={styles.label}>Current Constituency</Text>
+            <View style={styles.inputField}>
+              <Text style={styles.currentValue}>{currentConstituency}</Text>
             </View>
-
-            <Text style={styles.label}>New Constituency:</Text>
-            <TouchableOpacity
-              style={styles.locationSelector}
+            
+            <Text style={styles.label}>New Constituency</Text>
+            <TouchableOpacity 
+              style={styles.constituencySelector}
               onPress={() => setLocationModalVisible(true)}
             >
-              <Text style={newConstituency ? styles.selectedLocation : styles.placeholderText}>
-                {newConstituency || "Select new constituency"}
+              <Text style={selectedConstituency ? styles.constituencyText : styles.constituencyPlaceholder}>
+                {selectedConstituency || "Select constituency"}
               </Text>
-              <Ionicons name="chevron-forward" size={20} color="#357002" />
+              <Ionicons name="chevron-forward" size={20} color="#555" />
             </TouchableOpacity>
-
-            <Text style={styles.label}>Reason for Change:</Text>
+            
+            <Text style={styles.label}>Reason for Change</Text>
             <TextInput
               style={styles.reasonInput}
-              placeholder="Please explain why you're changing your constituency..."
-              value={reason}
-              onChangeText={setReason}
               multiline={true}
               numberOfLines={4}
+              placeholder="Please provide a reason for your constituency change request..."
+              value={reason}
+              onChangeText={setReason}
               textAlignVertical="top"
             />
-
-            <TouchableOpacity
-              style={styles.submitButton}
+            
+            <TouchableOpacity 
+              style={[styles.submitButton, loading && styles.disabledButton]}
               onPress={handleSubmit}
               disabled={loading}
             >
@@ -131,17 +131,17 @@ const ConstituencyChangeRequest = ({ visible, onClose, currentConstituency }) =>
           </ScrollView>
         </View>
       </View>
-
+      
       <LocationSelectionModal
         visible={locationModalVisible}
         onClose={() => setLocationModalVisible(false)}
-        onSelectCounty={() => {}}
+        onSelectCounty={() => {}} // We're only changing constituency, not county
         onSelectConstituency={(constituency) => {
-          setNewConstituency(constituency);
+          setSelectedConstituency(constituency);
           setLocationModalVisible(false);
         }}
-        selectedCounty="Nairobi"
-        selectedConstituency={newConstituency}
+        selectedCounty="Nairobi County"
+        selectedConstituency={selectedConstituency}
         isCountySelectable={false}
         title="Select New Constituency"
       />
@@ -150,18 +150,16 @@ const ConstituencyChangeRequest = ({ visible, onClose, currentConstituency }) =>
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
+  modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: 'flex-end',
   },
   modalContent: {
-    width: '90%',
-    maxHeight: '80%',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: '80%',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -176,67 +174,64 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
   },
-  closeButton: {
-    padding: 4,
-  },
   formContainer: {
     padding: 16,
   },
-  infoText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 20,
-  },
-  currentLocationContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   label: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: '#666',
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  inputField: {
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    padding: 12,
     marginBottom: 8,
   },
-  currentLocation: {
+  currentValue: {
     fontSize: 16,
-    color: '#666',
-    marginLeft: 8,
+    color: '#333',
   },
-  locationSelector: {
+  constituencySelector: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    marginBottom: 16,
   },
-  selectedLocation: {
+  constituencyText: {
     fontSize: 16,
     color: '#333',
   },
-  placeholderText: {
+  constituencyPlaceholder: {
     fontSize: 16,
-    color: '#999',
+    color: '#aaa',
   },
   reasonInput: {
+    backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    minHeight: 100,
+    height: 120,
     marginBottom: 24,
   },
   submitButton: {
     backgroundColor: '#357002',
-    borderRadius: 8,
     padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 24,
+  },
+  disabledButton: {
+    backgroundColor: '#aaa',
   },
   submitButtonText: {
     color: '#fff',

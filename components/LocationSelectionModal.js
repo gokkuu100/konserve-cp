@@ -29,7 +29,7 @@ const LocationSelectionModal = ({
     "Westlands",
     "Dagoretti North",
     "Dagoretti South",
-    "Lang'ata",
+    "Langata",
     "Kibra",
     "Roysambu",
     "Kasarani",

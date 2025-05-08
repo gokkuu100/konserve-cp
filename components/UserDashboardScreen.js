@@ -430,7 +430,11 @@ const UserDashboardScreen = ({ navigation }) => {
     return (
       <TouchableOpacity 
         key={subscription.id}
-        style={[styles.subscriptionCard, { backgroundColor: '#FFFFFF' }]}
+        style={[styles.subscriptionCard, { 
+          backgroundColor: isDarkMode ? theme.cardBackground : '#FFFFFF',
+          borderColor: isDarkMode ? theme.border : 'transparent',
+          borderWidth: isDarkMode ? 1 : 0
+        }]}
         onPress={() => toggleSubscriptionExpand(subscription.id)}
         activeOpacity={0.7}
       >
@@ -859,7 +863,11 @@ const UserDashboardScreen = ({ navigation }) => {
         )}
 
         {/* Welcome section with user profile */}
-        <View style={[styles.welcomeCard, { backgroundColor: theme.cardBackground }]}>
+        <View style={[styles.welcomeCard, { 
+          backgroundColor: theme.cardBackground,
+          borderColor: isDarkMode ? theme.border : 'transparent', 
+          borderWidth: isDarkMode ? 1 : 0
+        }]}>
           <View style={styles.welcomeCardHeader}>
             <View style={styles.welcomeUserInfo}>
               <Text style={[styles.greetingText, { color: theme.textSecondary }]}>
@@ -874,24 +882,30 @@ const UserDashboardScreen = ({ navigation }) => {
             </View>
           
             {userData?.avatar_url ? (
-                <Image 
+              <Image 
                 source={{ uri: userData.avatar_url }} 
                 style={styles.userAvatar} 
-                />
-              ) : (
-              <View style={styles.userAvatarPlaceholder}>
+              />
+            ) : (
+              <View style={[styles.userAvatarPlaceholder, {
+                backgroundColor: isDarkMode ? '#2E7D32' : '#16A34A'
+              }]}>
                 <Text style={styles.userAvatarPlaceholderText}>
                   {userData?.user_name ? userData.user_name.charAt(0).toUpperCase() : 
                    userData?.fullName ? userData.fullName.charAt(0).toUpperCase() : 'U'}
-                  </Text>
-                </View>
-              )}
+                </Text>
+              </View>
+            )}
           </View>
           
-          <View style={styles.statsContainer}>
+          <View style={[styles.statsContainer, {
+            backgroundColor: isDarkMode ? '#1e2721' : '#f9fafb'
+          }]}>
             <View style={styles.statItem}>
-              <View style={[styles.statIconBg, { backgroundColor: '#E0F2FE' }]}>
-                <Ionicons name="calendar" size={20} color="#0284C7" />
+              <View style={[styles.statIconBg, { 
+                backgroundColor: isDarkMode ? '#193549' : '#E0F2FE' 
+              }]}>
+                <Ionicons name="calendar" size={20} color={isDarkMode ? '#4dabf5' : '#0284C7'} />
               </View>
               <View>
                 <Text style={[styles.statValue, { color: theme.text }]}>{activeSubscriptions.length}</Text>
@@ -902,8 +916,10 @@ const UserDashboardScreen = ({ navigation }) => {
             <View style={[styles.statDivider, { backgroundColor: theme.border }]} />
             
             <View style={styles.statItem}>
-              <View style={[styles.statIconBg, { backgroundColor: '#FEF3C7' }]}>
-                <Ionicons name="time-outline" size={20} color="#D97706" />
+              <View style={[styles.statIconBg, { 
+                backgroundColor: isDarkMode ? '#3e3320' : '#FEF3C7' 
+              }]}>
+                <Ionicons name="time-outline" size={20} color={isDarkMode ? '#ffc14d' : '#D97706'} />
               </View>
               <View>
                 <Text style={[styles.statValue, { color: theme.text }]}>{expiredSubscriptions.length}</Text>
@@ -912,13 +928,13 @@ const UserDashboardScreen = ({ navigation }) => {
             </View>
           </View>
           
-            <TouchableOpacity 
+          <TouchableOpacity 
             style={[styles.editProfileButton, { backgroundColor: '#16A34A' }]}
-              onPress={() => navigation.navigate('EditProfile')}
-            >
+            onPress={() => navigation.navigate('EditProfile')}
+          >
             <Ionicons name="settings-outline" size={16} color="#FFFFFF" />
             <Text style={[styles.editProfileButtonText, { color: '#FFFFFF' }]}>Edit Profile</Text>
-            </TouchableOpacity>
+          </TouchableOpacity>
         </View>
 
         {/* Active Subscriptions Section */}
@@ -948,9 +964,19 @@ const UserDashboardScreen = ({ navigation }) => {
             )}
           </View>
         ) : (
-          <View style={[styles.emptyStateContainer, { backgroundColor: theme.cardBackground }]}>
-            <MaterialCommunityIcons name="calendar-blank" size={50} color={isDarkMode ? '#555' : '#cccccc'} />
-            <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>No active subscriptions</Text>
+          <View style={[styles.emptyStateContainer, { 
+            backgroundColor: theme.cardBackground,
+            borderColor: isDarkMode ? theme.border : 'transparent',
+            borderWidth: isDarkMode ? 1 : 0
+          }]}>
+            <MaterialCommunityIcons 
+              name="calendar-blank" 
+              size={50} 
+              color={isDarkMode ? theme.textSecondary : '#cccccc'} 
+            />
+            <Text style={[styles.emptyStateText, { color: theme.textSecondary }]}>
+              No active subscriptions
+            </Text>
             <TouchableOpacity 
               style={styles.browsePlansButton}
               onPress={() => navigation.navigate('CollectionAgencies')}

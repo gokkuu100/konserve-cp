@@ -3,25 +3,26 @@ import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    Dimensions,
-    FlatList,
-    Modal,
-    SafeAreaView,
-    ScrollView,
-    StatusBar,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  ActivityIndicator,
+  Alert,
+  Dimensions,
+  FlatList,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import authManager from '../supabase/manager/auth/AuthManager';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import LeaderboardManager from '../supabase/manager/rewards/LeaderboardManager';
 import PointsManager from '../supabase/manager/rewards/PointsManager';
+import { useTheme } from '../ThemeContext';
 import FullLeaderboardScreen from './FullLeaderboardScreen';
 import MiniLeaderboard from './MiniLeaderboard';
 
@@ -45,34 +46,38 @@ const formatDate = (dateString) => {
 };
 
 // Activity Card Component
-const ActivityCard = ({ activity }) => {
+const ActivityCard = ({ activity, theme }) => {
   return (
-    <View style={styles.activityCard}>
-      <View style={styles.activityIconContainer}>
-        <MaterialCommunityIcons name="ticket-confirmation" size={24} color="#4CAF50" />
+    <View style={[styles.activityCard, { 
+      backgroundColor: theme.isDarkMode ? '#2c2c2c' : '#f9f9f9'
+    }]}>
+      <View style={[styles.activityIconContainer, {
+        backgroundColor: `${theme.primary}20` // Semi-transparent primary color
+      }]}>
+        <MaterialCommunityIcons name="ticket-confirmation" size={24} color={theme.primary} />
       </View>
       
       <View style={styles.activityDetails}>
-        <Text style={styles.activityCodeName}>{activity.codeName}</Text>
-        <Text style={styles.activityDate}>{formatDate(activity.date)}</Text>
+        <Text style={[styles.activityCodeName, { color: theme.text }]}>{activity.codeName}</Text>
+        <Text style={[styles.activityDate, { color: theme.textSecondary }]}>{formatDate(activity.date)}</Text>
       </View>
       
       <View style={styles.activityPoints}>
-        <Text style={styles.pointsText}>+{activity.points}</Text>
-        <Text style={styles.pointsLabel}>points</Text>
+        <Text style={[styles.pointsText, { color: theme.primary }]}>+{activity.points}</Text>
+        <Text style={[styles.pointsLabel, { color: theme.textSecondary }]}>points</Text>
       </View>
     </View>
   );
 };
 
 // All Activities Screen Component
-const AllActivitiesScreen = ({ activities, onClose }) => {
+const AllActivitiesScreen = ({ activities, onClose, theme }) => {
   const totalPoints = activities.reduce((sum, activity) => sum + activity.points, 0);
   
   return (
-    <View style={styles.allActivitiesContainer}>
-      <StatusBar barStyle="light-content" />
-      <View style={styles.allActivitiesHeader}>
+    <View style={[styles.allActivitiesContainer, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={theme.isDarkMode ? "light-content" : "dark-content"} />
+      <View style={[styles.allActivitiesHeader, { backgroundColor: theme.primary }]}>
         <TouchableOpacity onPress={onClose} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
@@ -80,23 +85,30 @@ const AllActivitiesScreen = ({ activities, onClose }) => {
         <View style={{ width: 24 }} />
       </View>
       
-      <View style={styles.filterContainer}>
-        <View style={styles.filterPill}>
-          <Text style={styles.filterText}>All</Text>
+      <View style={[styles.filterContainer, { 
+        borderBottomColor: theme.border,
+        backgroundColor: theme.surface 
+      }]}>
+        <View style={[styles.filterPill, { 
+          backgroundColor: theme.isDarkMode ? '#3a5a3a' : '#E8F5E9' 
+        }]}>
+          <Text style={[styles.filterText, { color: theme.primary }]}>All</Text>
         </View>
       </View>
       
       <FlatList
         data={activities}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <ActivityCard activity={item} />}
+        renderItem={({ item }) => <ActivityCard activity={item} theme={theme} />}
         contentContainerStyle={styles.activitiesList}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           <View style={styles.totalPointsHeader}>
-            <View style={styles.totalPointsContainer}>
-              <Text style={styles.totalPointsValue}>{totalPoints}</Text>
-              <Text style={styles.totalPointsLabel}>Total Points Earned</Text>
+            <View style={[styles.totalPointsContainer, { 
+              backgroundColor: theme.isDarkMode ? '#3a5a3a' : '#E8F5E9'
+            }]}>
+              <Text style={[styles.totalPointsValue, { color: theme.primary }]}>{totalPoints}</Text>
+              <Text style={[styles.totalPointsLabel, { color: theme.primary }]}>Total Points Earned</Text>
             </View>
           </View>
         }
@@ -106,6 +118,7 @@ const AllActivitiesScreen = ({ activities, onClose }) => {
 };
 
 const RewardPointsScreen = () => {
+  const { theme, isDarkMode } = useTheme();
   const { user, userId } = useAuth();
   const navigation = useNavigation();
   const [rewardCode, setRewardCode] = useState('');
@@ -290,8 +303,8 @@ const RewardPointsScreen = () => {
 
   if (isLoading) {
     return (
-      <View style={[styles.container, styles.centerContent]}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+      <View style={[styles.container, styles.centerContent, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color={theme.primary} />
       </View>
     );
   }
@@ -305,12 +318,16 @@ const RewardPointsScreen = () => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
+      
       <ScrollView contentContainerStyle={styles.scrollContent}>
         {/* Rewards Card - Update with real data */}
         <View style={styles.cardContainer}>
           <LinearGradient
-            colors={['#2E7D32', '#4CAF50', '#81C784']}
+            colors={isDarkMode ? 
+              ['#1b4d1d', '#2d6930', '#3a7e3d'] : 
+              ['#2E7D32', '#4CAF50', '#81C784']}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
             style={styles.card}
@@ -352,13 +369,19 @@ const RewardPointsScreen = () => {
         </View>
         
         {/* Redemption Section */}
-        <View style={styles.redemptionContainer}>
-          <Text style={styles.sectionTitle}>Redeem Your Rewards</Text>
+        <View style={[styles.redemptionContainer, { 
+          backgroundColor: theme.surface, 
+          shadowColor: isDarkMode ? '#000' : '#000'
+        }]}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Redeem Your Rewards</Text>
           
           <TextInput
-            style={styles.input}
+            style={[styles.input, { 
+              backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+              color: theme.text
+            }]}
             placeholder="Enter reward code"
-            placeholderTextColor="#888"
+            placeholderTextColor={theme.textSecondary}
             value={rewardCode}
             onChangeText={setRewardCode}
             editable={!isRedeeming}
@@ -367,7 +390,8 @@ const RewardPointsScreen = () => {
           <TouchableOpacity 
             style={[
               styles.redeemButton,
-              isRedeeming && styles.redeemButtonDisabled
+              { backgroundColor: theme.primary },
+              isRedeeming && { backgroundColor: isDarkMode ? '#2c5c2c' : '#A5D6A7' }
             ]}
             onPress={handleRedeemCode}
             disabled={isRedeeming}
@@ -380,10 +404,13 @@ const RewardPointsScreen = () => {
           </TouchableOpacity>
           
           <TouchableOpacity 
-            style={styles.withdrawButton}
+            style={[styles.withdrawButton, { 
+              backgroundColor: theme.surface,
+              borderColor: theme.primary 
+            }]}
             onPress={() => setShowWithdrawModal(true)}
           >
-            <Text style={styles.withdrawButtonText}>Withdraw Points</Text>
+            <Text style={[styles.withdrawButtonText, { color: theme.primary }]}>Withdraw Points</Text>
           </TouchableOpacity>
         </View>
         
@@ -392,13 +419,18 @@ const RewardPointsScreen = () => {
           <MiniLeaderboard 
             key={leaderboardKey} // Add key to force re-render when points change
             onViewFullLeaderboard={() => setShowLeaderboard(true)}
+            theme={theme}
+            isDarkMode={isDarkMode}
           />
 
           {/* Info box for new users - only show if redemption history is empty */}
           {recentActivities.length === 0 && (
-            <View style={styles.leaderboardInfoBox}>
-              <MaterialCommunityIcons name="information-outline" size={22} color="#1565C0" />
-              <Text style={styles.leaderboardInfoText}>
+            <View style={[styles.leaderboardInfoBox, { 
+              backgroundColor: isDarkMode ? '#1a3a5a' : '#E3F2FD',
+              borderLeftColor: isDarkMode ? '#0d47a1' : '#1565C0'
+            }]}>
+              <MaterialCommunityIcons name="information-outline" size={22} color={isDarkMode ? '#64b5f6' : '#1565C0'} />
+              <Text style={[styles.leaderboardInfoText, { color: theme.text }]}>
                 Redeem your first code to earn points and join the leaderboard rankings!
               </Text>
             </View>
@@ -406,12 +438,15 @@ const RewardPointsScreen = () => {
         </View>
         
         {/* Recent Activity Section */}
-        <View style={styles.activityContainer}>
+        <View style={[styles.activityContainer, { 
+          backgroundColor: theme.surface, 
+          shadowColor: isDarkMode ? '#000' : '#000'
+        }]}>
           <View style={styles.activityHeader}>
-            <Text style={styles.sectionTitle}>Recent Activity</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Recent Activity</Text>
             {formattedActivities.length > 0 && (
               <TouchableOpacity onPress={() => setShowAllActivities(true)}>
-                <Text style={styles.viewAllText}>View All</Text>
+                <Text style={[styles.viewAllText, { color: theme.primary }]}>View All</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -419,7 +454,7 @@ const RewardPointsScreen = () => {
           {formattedActivities.length > 0 ? (
             <View>
               {formattedActivities.slice(0, 2).map((activity) => (
-                <ActivityCard key={activity.id} activity={activity} />
+                <ActivityCard key={activity.id} activity={activity} theme={theme} />
               ))}
               
               {formattedActivities.length > 2 && (
@@ -427,17 +462,17 @@ const RewardPointsScreen = () => {
                   style={styles.moreActivitiesButton}
                   onPress={() => setShowAllActivities(true)}
                 >
-                  <Text style={styles.moreActivitiesText}>
+                  <Text style={[styles.moreActivitiesText, { color: theme.primary }]}>
                     +{formattedActivities.length - 2} more activities
                   </Text>
-                  <MaterialIcons name="chevron-right" size={18} color="#4CAF50" />
+                  <MaterialIcons name="chevron-right" size={18} color={theme.primary} />
                 </TouchableOpacity>
               )}
             </View>
           ) : (
             <View style={styles.emptyActivity}>
-              <MaterialCommunityIcons name="history" size={36} color="#888" />
-              <Text style={styles.emptyActivityText}>No recent activity</Text>
+              <MaterialCommunityIcons name="history" size={36} color={theme.textSecondary} />
+              <Text style={[styles.emptyActivityText, { color: theme.textSecondary }]}>No recent activity</Text>
             </View>
           )}
         </View>
@@ -451,18 +486,18 @@ const RewardPointsScreen = () => {
         onRequestClose={() => setShowWithdrawModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
+          <View style={[styles.modalContainer, { backgroundColor: theme.surface }]}>
             <TouchableOpacity 
               style={styles.closeButton} 
               onPress={() => setShowWithdrawModal(false)}
             >
-              <Ionicons name="close" size={24} color="#000" />
+              <Ionicons name="close" size={24} color={theme.text} />
             </TouchableOpacity>
             
             <View style={styles.modalContent}>
               <View style={styles.creditCardIconContainer}>
                 <LinearGradient
-                  colors={['#424242', '#212121']}
+                  colors={isDarkMode ? ['#333', '#222'] : ['#424242', '#212121']}
                   style={styles.creditCardGradient}
                 >
                   <MaterialCommunityIcons name="credit-card-wireless" size={40} color="#fff" />
@@ -470,14 +505,14 @@ const RewardPointsScreen = () => {
                 </LinearGradient>
               </View>
               
-              <Text style={styles.comingSoonText}>Coming soon</Text>
+              <Text style={[styles.comingSoonText, { color: theme.text }]}>Coming soon</Text>
               
-              <Text style={styles.modalDescription}>
+              <Text style={[styles.modalDescription, { color: theme.textSecondary }]}>
                 This feature isn't available just yet, but it's on the way. Stay tuned for updates.
               </Text>
               
-              <View style={styles.progressBar}>
-                <View style={styles.progressFill} />
+              <View style={[styles.progressBar, { backgroundColor: isDarkMode ? '#444' : '#e0e0e0' }]}>
+                <View style={[styles.progressFill, { backgroundColor: theme.primary }]} />
               </View>
             </View>
           </View>
@@ -493,6 +528,7 @@ const RewardPointsScreen = () => {
         <AllActivitiesScreen 
           activities={formattedActivities} 
           onClose={() => setShowAllActivities(false)} 
+          theme={theme}
         />
       </Modal>
       
@@ -508,6 +544,8 @@ const RewardPointsScreen = () => {
             // Refresh leaderboard data when returning from full leaderboard
             refreshLeaderboard();
           }} 
+          theme={theme}
+          isDarkMode={isDarkMode}
         />
       </Modal>
     </SafeAreaView>

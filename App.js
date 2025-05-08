@@ -6,7 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Linking, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, StatusBar, StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import NotificationService from './supabase/services/NotificationService';
 import { ThemeProvider, useTheme } from './ThemeContext';
@@ -45,7 +45,9 @@ import MarketDirectChat from './components/MarketDirectChat';
 import MarketMessagesInbox from './components/MarketMessagesInbox';
 import WasteMarketplace from './components/MarketScreen';
 import ProfileCompletionScreen from './components/ProfileCompletionScreen';
+import { supabase } from './supabase/config/supabaseConfig';
 import ProfileManager from './supabase/manager/auth/ProfileManager';
+import ConstituencyManager from './supabase/manager/constituencychange/ConstituencyManager';
 import MessageManager from './supabase/manager/messaging/MessageManager';
 
 const Stack = createStackNavigator();
@@ -396,7 +398,7 @@ const App = () => {
 // Separate component to use theme and auth context
 const AppContent = ({ navigationRef, linking }) => {
   const { theme, isDarkMode } = useTheme();
-  const { isAuthenticated, loading, userId } = useAuth();
+  const { isAuthenticated, loading, userId, userData, setUserData } = useAuth();
   const [notificationsInitialized, setNotificationsInitialized] = useState(false);
   
   console.log('AppContent rendering, auth state:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
@@ -522,6 +524,30 @@ const AppContent = ({ navigationRef, linking }) => {
       Notifications.removeNotificationSubscription(responseSubscription);
     };
   }, [notificationsInitialized, navigationRef]);
+  
+  // Set up constituency change listener
+  useEffect(() => {
+    let constituencyChangeSubscription = null;
+    
+    if (isAuthenticated && userId) {
+      constituencyChangeSubscription = ConstituencyManager.listenForApprovedRequests(
+        userId,
+        (newConstituency) => {
+          // You could show a notification here
+          Alert.alert(
+            'Constituency Updated',
+            `Your constituency has been updated to ${newConstituency}!`
+          );
+        }
+      );
+    }
+    
+    return () => {
+      if (constituencyChangeSubscription) {
+        supabase.removeChannel(constituencyChangeSubscription);
+      }
+    };
+  }, [isAuthenticated, userId]);
   
   // Create navigation theme based on app theme
   const navigationTheme = {

@@ -3,10 +3,16 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Image, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import LeaderboardManager from '../supabase/manager/rewards/LeaderboardManager';
+import { useTheme } from '../ThemeContext';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=4CAF50&color=fff&name=User';
 
-const FullLeaderboardScreen = ({ onClose }) => {
+const FullLeaderboardScreen = ({ onClose, theme: propTheme, isDarkMode: propIsDarkMode }) => {
+  const themeContext = useTheme();
+  // Use provided theme props or fall back to context if not provided
+  const theme = propTheme || themeContext.theme;
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : themeContext.isDarkMode;
+  
   const { user, userId, isAuthenticated, loading: authLoading } = useAuth();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [userRank, setUserRank] = useState(null);
@@ -78,7 +84,11 @@ const FullLeaderboardScreen = ({ onClose }) => {
     return (
       <View style={[
         styles.userItem, 
-        isCurrentUser && styles.currentUserItem
+        { backgroundColor: theme.surface },
+        isCurrentUser && [
+          styles.currentUserItem, 
+          { backgroundColor: isDarkMode ? '#2c3e2c' : '#E8F5E9' }
+        ]
       ]}>
         {/* Rank or Medal */}
         {item.rank <= 3 ? (
@@ -95,7 +105,7 @@ const FullLeaderboardScreen = ({ onClose }) => {
             />
           </View>
         ) : (
-          <Text style={styles.rankText}>{item.rank}</Text>
+          <Text style={[styles.rankText, { color: theme.text }]}>{item.rank}</Text>
         )}
         
         <Image 
@@ -107,27 +117,32 @@ const FullLeaderboardScreen = ({ onClose }) => {
         />
         
         <View style={styles.userInfo}>
-          <Text style={styles.userName}>
+          <Text style={[styles.userName, { color: theme.text }]}>
             {item.full_name || 'User'}
-            {isCurrentUser && <Text style={styles.youText}> (You)</Text>}
+            {isCurrentUser && <Text style={[styles.youText, { color: theme.primary }]}> (You)</Text>}
           </Text>
         </View>
         
         <View style={styles.pointsContainer}>
-          <Text style={styles.pointsValue}>{item.total_points}</Text>
-          <Text style={styles.pointsLabel}>points</Text>
+          <Text style={[styles.pointsValue, { color: theme.primary }]}>{item.total_points}</Text>
+          <Text style={[styles.pointsLabel, { color: theme.textSecondary }]}>points</Text>
         </View>
       </View>
     );
   };
 
   const renderHeader = () => (
-    <View style={styles.listHeader}>
-      <Text style={styles.listHeaderTitle}>Top Users</Text>
+    <View style={[styles.listHeader, { 
+      backgroundColor: theme.surface,
+      borderBottomColor: theme.border 
+    }]}>
+      <Text style={[styles.listHeaderTitle, { color: theme.text }]}>Top Users</Text>
       
       {userRank && (
-        <View style={styles.userRankInfo}>
-          <Text style={styles.userRankText}>
+        <View style={[styles.userRankInfo, { 
+          backgroundColor: isDarkMode ? '#2c3e2c' : '#E8F5E9' 
+        }]}>
+          <Text style={[styles.userRankText, { color: theme.primary }]}>
             Your Rank: #{userRank.rank} with {userRank.total_points} points
           </Text>
         </View>
@@ -135,11 +150,14 @@ const FullLeaderboardScreen = ({ onClose }) => {
       
       {/* Show the "not ranked yet" banner if applicable */}
       {userNotRanked && (
-        <View style={styles.notRankedInfo}>
-          <MaterialIcons name="emoji-events" size={24} color="#FFA000" style={styles.trophyIcon} />
+        <View style={[styles.notRankedInfo, {
+          backgroundColor: isDarkMode ? '#3e3e26' : '#FFF8E1',
+          borderLeftColor: isDarkMode ? '#b39f00' : '#FFC107'
+        }]}>
+          <MaterialIcons name="emoji-events" size={24} color={isDarkMode ? '#e6c700' : '#FFA000'} style={styles.trophyIcon} />
           <View style={styles.notRankedTextContainer}>
-            <Text style={styles.notRankedTitle}>You're not on the leaderboard yet</Text>
-            <Text style={styles.notRankedInstructions}>
+            <Text style={[styles.notRankedTitle, { color: theme.text }]}>You're not on the leaderboard yet</Text>
+            <Text style={[styles.notRankedInstructions, { color: theme.textSecondary }]}>
               Redeem reward codes to earn points and join the rankings!
             </Text>
           </View>
@@ -149,25 +167,31 @@ const FullLeaderboardScreen = ({ onClose }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Leaderboard</Text>
+      <View style={[styles.header, { 
+        backgroundColor: theme.surface, 
+        borderBottomColor: theme.border 
+      }]}>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Leaderboard</Text>
         <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#333" />
+          <Ionicons name="close" size={24} color={theme.text} />
         </TouchableOpacity>
       </View>
       
       {loading && !refreshing ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading leaderboard...</Text>
+        <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading leaderboard...</Text>
         </View>
       ) : error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchLeaderboardData}>
+        <View style={[styles.errorContainer, { backgroundColor: theme.background }]}>
+          <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
+          <TouchableOpacity 
+            style={[styles.retryButton, { backgroundColor: theme.primary }]} 
+            onPress={fetchLeaderboardData}
+          >
             <Text style={styles.retryText}>Retry</Text>
           </TouchableOpacity>
         </View>
@@ -176,14 +200,14 @@ const FullLeaderboardScreen = ({ onClose }) => {
           data={leaderboardData}
           renderItem={renderItem}
           keyExtractor={(item) => item.user_id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { backgroundColor: theme.background }]}
           ListHeaderComponent={renderHeader}
           refreshing={refreshing}
           onRefresh={handleRefresh}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <MaterialCommunityIcons name="trophy-outline" size={48} color="#ccc" />
-              <Text style={styles.emptyText}>No leaderboard data available</Text>
+            <View style={[styles.emptyContainer, { backgroundColor: theme.background }]}>
+              <MaterialCommunityIcons name="trophy-outline" size={48} color={theme.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No leaderboard data available</Text>
             </View>
           }
         />

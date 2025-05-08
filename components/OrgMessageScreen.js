@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import OrganizationMessagesManager from '../supabase/manager/organizations/OrganizationMessagesManager';
+import { useTheme } from '../ThemeContext';
 
 // Helper function to format time
 function formatTime(timeString) {
@@ -44,21 +45,23 @@ function formatDate(dateString) {
 }
 
 // Helper function to get message type icon
-const getMessageTypeIcon = (type) => {
+const getMessageTypeIcon = (type, color) => {
   switch(type) {
     case 'event':
-      return <Ionicons name="calendar" size={20} color="#357002" />;
+      return <Ionicons name="calendar" size={20} color={color} />;
     case 'announcement':
-      return <Ionicons name="megaphone" size={20} color="#357002" />;
+      return <Ionicons name="megaphone" size={20} color={color} />;
     case 'alert':
       return <Ionicons name="warning" size={20} color="#FF9800" />;
     default:
-      return <Ionicons name="mail" size={20} color="#357002" />;
+      return <Ionicons name="mail" size={20} color={color} />;
   }
 };
 
 // Message Detail Component
 const MessageDetailView = ({ message, visible, onClose, messageType }) => {
+  const { theme, isDarkMode } = useTheme();
+  
   if (!message) return null;
   
   return (
@@ -68,16 +71,22 @@ const MessageDetailView = ({ message, visible, onClose, messageType }) => {
       visible={visible}
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
-        <View style={styles.conversationHeader}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.conversationHeader, {
+          backgroundColor: theme.surface,
+          borderBottomColor: theme.border
+        }]}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={onClose}
           >
-            <Ionicons name="arrow-back" size={24} color="#357002" />
+            <Ionicons name="arrow-back" size={24} color={theme.primary} />
           </TouchableOpacity>
-          <Text style={styles.conversationTitle}>{message.org_shortname}</Text>
-          <Text style={styles.messageTypeLabel}>
+          <Text style={[styles.conversationTitle, { color: theme.text }]}>{message.org_shortname}</Text>
+          <Text style={[styles.messageTypeLabel, {
+            color: theme.primary,
+            backgroundColor: theme.secondary + '40'
+          }]}>
             {messageType === 'broadcast' ? 'Broadcast' : 'Direct'}
           </Text>
         </View>
@@ -91,24 +100,30 @@ const MessageDetailView = ({ message, visible, onClose, messageType }) => {
                 defaultSource={require('../assets/resized.jpg')}
               />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarInitial}>
+              <View style={[styles.avatarPlaceholder, {
+                backgroundColor: isDarkMode ? '#333' : '#e8f5e9'
+              }]}>
+                <Text style={[styles.avatarInitial, {
+                  color: isDarkMode ? theme.primary : '#357002'
+                }]}>
                   {message.orgName?.charAt(0)?.toUpperCase() || 'O'}
                 </Text>
               </View>
             )}
             <View style={styles.messageDetailHeaderText}>
-              <Text style={styles.detailOrgName}>{message.orgName}</Text>
-              <Text style={styles.detailTimestamp}>{formatDate(message.timestamp)}</Text>
+              <Text style={[styles.detailOrgName, { color: theme.text }]}>{message.orgName}</Text>
+              <Text style={[styles.detailTimestamp, { color: theme.textSecondary }]}>{formatDate(message.timestamp)}</Text>
             </View>
             <View style={styles.detailTypeIconContainer}>
-              {getMessageTypeIcon(message.type)}
+              {getMessageTypeIcon(message.type, theme.primary)}
             </View>
           </View>
           
-          <Text style={styles.detailMessageTitle}>{message.title}</Text>
-          <View style={styles.messageBubble}>
-            <Text style={styles.detailMessageContent}>{message.message}</Text>
+          <Text style={[styles.detailMessageTitle, { color: theme.text }]}>{message.title}</Text>
+          <View style={[styles.messageBubble, {
+            backgroundColor: isDarkMode ? '#2c3e2c' : '#F0F9F0'
+          }]}>
+            <Text style={[styles.detailMessageContent, { color: theme.text }]}>{message.message}</Text>
           </View>
         </View>
       </SafeAreaView>
@@ -117,6 +132,7 @@ const MessageDetailView = ({ message, visible, onClose, messageType }) => {
 };
 
 const OrgMessageScreen = ({ navigation }) => {
+  const { theme, isDarkMode } = useTheme();
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState([]);
   const [refreshing, setRefreshing] = useState(false);
@@ -224,7 +240,15 @@ const OrgMessageScreen = ({ navigation }) => {
     <TouchableOpacity 
       style={[
         styles.messageItem, 
-        activeTab === 'direct' && !item.isRead && styles.unreadMessage
+        { 
+          backgroundColor: theme.surface,
+          borderColor: theme.border,
+          shadowColor: theme.text
+        },
+        activeTab === 'direct' && !item.isRead && {
+          backgroundColor: isDarkMode ? '#2c3e2c' : '#f0f9f0',
+          borderColor: isDarkMode ? '#3e523e' : '#e0e7e0'
+        }
       ]}
       onPress={() => handleMessagePress(item)}
     >
@@ -236,65 +260,99 @@ const OrgMessageScreen = ({ navigation }) => {
             defaultSource={require('../assets/resized.jpg')}
           />
         ) : (
-          <View style={styles.avatarPlaceholder}>
-            <Text style={styles.avatarInitial}>
+          <View style={[styles.avatarPlaceholder, {
+            backgroundColor: isDarkMode ? '#333' : '#e8f5e9'
+          }]}>
+            <Text style={[styles.avatarInitial, {
+              color: isDarkMode ? theme.primary : '#357002'
+            }]}>
               {item.orgName?.charAt(0)?.toUpperCase() || 'O'}
             </Text>
           </View>
         )}
         <View style={styles.messageHeaderText}>
-          <Text style={styles.orgName}>{item.orgName}</Text>
-          <Text style={styles.timestamp}>{formatDate(item.timestamp)}</Text>
+          <Text style={[styles.orgName, { color: theme.text }]}>{item.orgName}</Text>
+          <Text style={[styles.timestamp, { color: theme.textSecondary }]}>{formatDate(item.timestamp)}</Text>
         </View>
         <View style={styles.typeIconContainer}>
-          {getMessageTypeIcon(item.type)}
+          {getMessageTypeIcon(item.type, theme.primary)}
         </View>
       </View>
       
-      <Text style={styles.messageTitle}>{item.title}</Text>
-      <Text style={styles.messageContent} numberOfLines={3}>
+      <Text style={[styles.messageTitle, { color: theme.text }]}>{item.title}</Text>
+      <Text style={[styles.messageContent, { color: theme.textSecondary }]} numberOfLines={3}>
         {item.message}
       </Text>
       
-      {activeTab === 'direct' && !item.isRead && <View style={styles.unreadIndicator} />}
+      {activeTab === 'direct' && !item.isRead && (
+        <View style={[styles.unreadIndicator, { backgroundColor: theme.primary }]} />
+      )}
 
       {activeTab === 'broadcast' && (
-        <View style={styles.broadcastBadge}>
-          <Text style={styles.broadcastText}>Broadcast</Text>
+        <View style={[styles.broadcastBadge, {
+          backgroundColor: theme.secondary + '40'
+        }]}>
+          <Text style={[styles.broadcastText, { color: theme.primary }]}>Broadcast</Text>
         </View>
       )}
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {/* Header with back button */}
-      <View style={styles.header}>
+      <View style={[styles.header, {
+        backgroundColor: theme.surface,
+        borderBottomColor: theme.border
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={theme.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Organization Messages</Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Organization Messages</Text>
       </View>
 
       {/* Message type tabs */}
-      <View style={styles.tabContainer}>
+      <View style={[styles.tabContainer, {
+        backgroundColor: theme.surface,
+        borderBottomColor: theme.border
+      }]}>
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'direct' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'direct' && [
+            styles.activeTab,
+            { borderBottomColor: theme.primary }
+          ]]}
           onPress={() => setActiveTab('direct')}
         >
-          <Text style={[styles.tabText, activeTab === 'direct' && styles.activeTabText]}>
+          <Text style={[
+            styles.tabText, 
+            { color: theme.textSecondary },
+            activeTab === 'direct' && { 
+              fontWeight: 'bold',
+              color: theme.primary
+            }
+          ]}>
             Direct
           </Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
-          style={[styles.tab, activeTab === 'broadcast' && styles.activeTab]}
+          style={[styles.tab, activeTab === 'broadcast' && [
+            styles.activeTab,
+            { borderBottomColor: theme.primary }
+          ]]}
           onPress={() => setActiveTab('broadcast')}
         >
-          <Text style={[styles.tabText, activeTab === 'broadcast' && styles.activeTabText]}>
+          <Text style={[
+            styles.tabText,
+            { color: theme.textSecondary },
+            activeTab === 'broadcast' && {
+              fontWeight: 'bold',
+              color: theme.primary
+            }
+          ]}>
             Broadcast
           </Text>
         </TouchableOpacity>
@@ -302,15 +360,17 @@ const OrgMessageScreen = ({ navigation }) => {
 
       {isLoading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#357002" />
-          <Text style={styles.loadingText}>Loading messages...</Text>
+          <ActivityIndicator size="large" color={theme.primary} />
+          <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Loading messages...</Text>
         </View>
       ) : error ? (
         <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={64} color="#FF5252" />
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={fetchMessages}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+          <Ionicons name="alert-circle-outline" size={64} color={theme.error} />
+          <Text style={[styles.errorText, { color: theme.textSecondary }]}>{error}</Text>
+          <TouchableOpacity style={[styles.retryButton, {
+            backgroundColor: isDarkMode ? '#2c3e2c' : '#e8f5e9'
+          }]} onPress={fetchMessages}>
+            <Text style={[styles.retryButtonText, { color: theme.primary }]}>Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -324,13 +384,15 @@ const OrgMessageScreen = ({ navigation }) => {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              colors={["#357002"]}
+              colors={[theme.primary]}
+              tintColor={theme.primary}
+              progressBackgroundColor={theme.surface}
             />
           }
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Ionicons name="mail-outline" size={64} color="#ccc" />
-              <Text style={styles.emptyText}>
+              <Ionicons name="mail-outline" size={64} color={theme.textSecondary} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
                 No {activeTab === 'direct' ? 'direct' : 'broadcast'} messages yet
               </Text>
             </View>

@@ -160,27 +160,37 @@ const AgencyMessagesScreen = ({ navigation }) => {
     const selectedAgencyObj = subscribedAgencies.find(a => a.id === selectedAgency) || subscribedAgencies[0];
     
     return (
-      <View style={[styles.agencySelector, isDarkMode && styles.agencySelectorDark]}>
+      <View style={[styles.agencySelector, { 
+        borderBottomColor: theme.border,
+        backgroundColor: theme.cardBackground
+      }]}>
         <TouchableOpacity 
-          style={[styles.dropdownButton, isDarkMode && styles.dropdownButtonDark]}
+          style={[styles.dropdownButton, { 
+            backgroundColor: isDarkMode ? '#333' : '#F3F4F6',
+            borderColor: theme.border
+          }]}
           onPress={() => setAgencyDropdownVisible(true)}
         >
           <View style={styles.selectedAgencyContainer}>
             {selectedAgencyObj.logo_url ? (
               <Image source={{ uri: selectedAgencyObj.logo_url }} style={styles.agencyLogoSmall} />
             ) : (
-              <View style={styles.agencyLogoPlaceholder}>
-                <Text style={styles.agencyLogoInitial}>{selectedAgencyObj.name.charAt(0)}</Text>
+              <View style={[styles.agencyLogoPlaceholder, {
+                backgroundColor: isDarkMode ? '#2E7D32' : '#E8F5E9'
+              }]}>
+                <Text style={[styles.agencyLogoInitial, {
+                  color: isDarkMode ? '#8bc34a' : '#4CAF50'
+                }]}>{selectedAgencyObj.name.charAt(0)}</Text>
               </View>
             )}
-            <Text style={[styles.selectedAgencyText, isDarkMode && styles.textDark]} numberOfLines={1}>
+            <Text style={[styles.selectedAgencyText, { color: theme.text }]} numberOfLines={1}>
               {selectedAgencyObj.name}
             </Text>
           </View>
           <AntDesign 
             name="caretdown" 
             size={12} 
-            color={isDarkMode ? "#BDBDBD" : "#6B7280"} 
+            color={theme.textSecondary} 
           />
         </TouchableOpacity>
         
@@ -192,7 +202,11 @@ const AgencyMessagesScreen = ({ navigation }) => {
         >
           <TouchableWithoutFeedback onPress={() => setAgencyDropdownVisible(false)}>
             <View style={styles.modalOverlay}>
-              <View style={[styles.dropdownContent, isDarkMode && styles.dropdownContentDark]}>
+              <View style={[styles.dropdownContent, { 
+                backgroundColor: theme.cardBackground,
+                borderColor: theme.border,
+                borderWidth: 1
+              }]}>
                 <ScrollView>
                   <TouchableOpacity 
                     style={[styles.dropdownItem, isDarkMode && styles.dropdownItemDark]}
@@ -344,7 +358,11 @@ const AgencyMessagesScreen = ({ navigation }) => {
         style={[
           styles.messageItem,
           isUnread && styles.unreadItem,
-          isDarkMode && styles.messageItemDark
+          { backgroundColor: isDarkMode ? 
+            (isUnread ? '#1e2922' : theme.cardBackground) : 
+            (isUnread ? '#F0F9F0' : '#FFFFFF') 
+          },
+          { borderBottomColor: theme.border }
         ]}
         onPress={() => handleMessagePress(item)}
       >
@@ -352,13 +370,19 @@ const AgencyMessagesScreen = ({ navigation }) => {
           {item.agency_logo ? (
             <Image source={{ uri: item.agency_logo }} style={styles.avatar} />
           ) : (
-            <View style={[styles.avatarPlaceholder, isDarkMode && styles.avatarPlaceholderDark]}>
-              <Text style={styles.avatarInitial}>
+            <View style={[styles.avatarPlaceholder, { 
+              backgroundColor: isDarkMode ? '#2E7D32' : '#E8F5E9' 
+            }]}>
+              <Text style={[styles.avatarInitial, { 
+                color: isDarkMode ? '#8bc34a' : '#4CAF50'
+              }]}>
                 {item.agency_name.charAt(0).toUpperCase()}
               </Text>
             </View>
           )}
-          {isUnread && <View style={styles.unreadBadge} />}
+          {isUnread && <View style={[styles.unreadBadge, {
+            borderColor: isDarkMode ? theme.cardBackground : '#FFFFFF'
+          }]} />}
         </View>
         
         <View style={styles.messageContent}>
@@ -367,13 +391,13 @@ const AgencyMessagesScreen = ({ navigation }) => {
               style={[
                 styles.agencyName, 
                 isUnread && styles.unreadText,
-                isDarkMode && styles.textDark
+                { color: theme.text }
               ]}
               numberOfLines={1}
             >
               {item.agency_name}
             </Text>
-            <Text style={[styles.timestamp, isDarkMode && styles.textDarkSecondary]}>
+            <Text style={[styles.timestamp, { color: theme.textSecondary }]}>
               {formatTimestamp(item.created_at)}
             </Text>
           </View>
@@ -382,7 +406,7 @@ const AgencyMessagesScreen = ({ navigation }) => {
             style={[
               styles.messageSubject, 
               isUnread && styles.unreadText,
-              isDarkMode && styles.textDark
+              { color: theme.text }
             ]}
             numberOfLines={1}
           >
@@ -392,7 +416,7 @@ const AgencyMessagesScreen = ({ navigation }) => {
           <Text 
             style={[
               styles.messagePreview,
-              isDarkMode && styles.textDarkSecondary
+              { color: theme.textSecondary }
             ]}
             numberOfLines={2}
           >
@@ -400,26 +424,44 @@ const AgencyMessagesScreen = ({ navigation }) => {
           </Text>
           
           <View style={styles.messageTags}>
-          {item.message_source === 'broadcast' && (
-            <View style={styles.broadcastBadge}>
-              <Text style={styles.broadcastText}>Broadcast</Text>
-            </View>
-          )}
+            {item.message_source === 'broadcast' && (
+              <View style={[styles.broadcastBadge, {
+                backgroundColor: isDarkMode ? '#1a331a' : '#E8F5E9'
+              }]}>
+                <Text style={[styles.broadcastText, {
+                  color: isDarkMode ? '#6abf69' : '#4CAF50'
+                }]}>Broadcast</Text>
+              </View>
+            )}
             
             {item.message_source === 'direct' && (
-              <View style={styles.directBadge}>
-                <Text style={styles.directText}>Direct</Text>
+              <View style={[styles.directBadge, {
+                backgroundColor: isDarkMode ? '#1a294d' : '#E8F0FE'
+              }]}>
+                <Text style={[styles.directText, {
+                  color: isDarkMode ? '#64b5f6' : '#1976D2'
+                }]}>Direct</Text>
               </View>
             )}
             
             {item.message_type !== 'general' && (
               <View style={[
                 styles.typeBadge,
-                item.message_type === 'announcement' && styles.announcementBadge,
-                item.message_type === 'alert' && styles.alertBadge,
-                item.message_type === 'event' && styles.eventBadge,
+                item.message_type === 'announcement' ? 
+                  (isDarkMode ? { backgroundColor: '#1a331a' } : styles.announcementBadge) :
+                item.message_type === 'alert' ? 
+                  (isDarkMode ? { backgroundColor: '#331a1a' } : styles.alertBadge) :
+                item.message_type === 'event' ? 
+                  (isDarkMode ? { backgroundColor: '#1a2933' } : styles.eventBadge) :
+                  (isDarkMode ? { backgroundColor: '#262626' } : null)
               ]}>
-                <Text style={styles.typeText}>
+                <Text style={[styles.typeText, {
+                  color: isDarkMode ?
+                    (item.message_type === 'announcement' ? '#6abf69' :
+                    item.message_type === 'alert' ? '#f48fb1' :
+                    item.message_type === 'event' ? '#64b5f6' : '#aaaaaa') :
+                    '#616161'
+                }]}>
                   {item.message_type.charAt(0).toUpperCase() + item.message_type.slice(1)}
                 </Text>
               </View>
@@ -452,8 +494,8 @@ const AgencyMessagesScreen = ({ navigation }) => {
     if (!isLoading && messages.length === 0) {
       return (
         <View style={styles.emptyContainer}>
-          <Ionicons name="mail-outline" size={64} color="#BDBDBD" />
-          <Text style={[styles.emptyText, isDarkMode && styles.textDark]}>
+          <Ionicons name="mail-outline" size={64} color={isDarkMode ? '#555' : '#BDBDBD'} />
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
             You don't have any messages yet
           </Text>
         </View>
