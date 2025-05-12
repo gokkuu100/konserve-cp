@@ -1,10 +1,19 @@
 {
-    "build": {
-      "production": {
-        "env": {
-          "ENV_FILE": ".env.production"
-        }
+  "build": {
+    "preview": {
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      }
+    },
+    "release": {
+      "android": {
+        "buildType": "apk"  // Use "app-bundle" if you want to create an AAB
       }
     }
   }
-  
+}

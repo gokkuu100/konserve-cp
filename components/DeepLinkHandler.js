@@ -24,6 +24,12 @@ const DeepLinkHandler = () => {
       processingDeepLink.current = true;
       console.log('Received deep link:', url);
       
+      // Log all URL parameters for debugging
+      if (url) {
+        const urlObj = new URL(url);
+        console.log('Deep link parameters:', urlObj.searchParams.toString());
+      }
+      
       // Check if this is an auth callback URL
       if (url && (
         url.includes('access_token=') || 
@@ -69,18 +75,33 @@ const DeepLinkHandler = () => {
               // Profile doesn't exist or is incomplete (missing constituency)
               if (!profile || !profile.constituency) {
                 console.log('Navigating to profile completion screen');
-                navigation.navigate('ProfileCompletion', {
-                  user: data.user,
-                  email: data.user.email,
-                  name: data.user.user_metadata?.full_name || ''
-                });
+                // Use setTimeout to ensure navigation happens after current JS execution
+                setTimeout(() => {
+                  navigation.reset({
+                    index: 0,
+                    routes: [{ 
+                      name: 'ProfileCompletion',
+                      params: {
+                        user: data.user,
+                        email: data.user.email,
+                        name: data.user.user_metadata?.full_name || ''
+                      }
+                    }]
+                  });
+                }, 100);
               } else {
                 // Profile is complete, navigate to main app
                 console.log('Profile complete, navigating to MainTabs');
                 // Assuming you have stored signIn in a global context
                 if (global.authContext && typeof global.authContext.signIn === 'function') {
                   await global.authContext.signIn(null, null, data.session);
-                  navigation.navigate('MainTabs');
+                  // Use setTimeout to ensure navigation happens after current JS execution
+                  setTimeout(() => {
+                    navigation.reset({
+                      index: 0,
+                      routes: [{ name: 'MainTabs' }]
+                    });
+                  }, 100);
                 }
               }
             }

@@ -1,28 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
-  TouchableOpacity, 
-  SafeAreaView, 
-  ActivityIndicator, 
-  Image, 
-  Alert, 
-  TextInput, 
-  ScrollView, 
-  KeyboardAvoidingView, 
-  Platform, 
-  Modal 
+import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons, MaterialIcons, FontAwesome } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
-import FeedbackManager from '../supabase/manager/agency/FeedbackManager';
 import AgencyManager from '../supabase/manager/agency/AgencyManager';
+import FeedbackManager from '../supabase/manager/agency/FeedbackManager';
+import { useTheme } from '../ThemeContext';
 
 const AgencyReviewScreen = ({ route, navigation }) => {
   const { agencyId, agencyName, canAddReview = false } = route.params || {};
   const { user } = useAuth();
+  const { isDarkMode, theme } = useTheme();
   
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -174,17 +175,27 @@ const AgencyReviewScreen = ({ route, navigation }) => {
   };
 
   const renderReviewItem = ({ item }) => (
-    <View style={styles.reviewItem}>
+    <View style={[styles.reviewItem, {
+      backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+      borderColor: isDarkMode ? '#444' : undefined,
+      borderWidth: isDarkMode ? 1 : 0
+    }]}>
       <View style={styles.reviewHeader}>
         <View style={styles.reviewerInfo}>
-          <Text style={styles.reviewerName}>{item.user_name || 'Anonymous User'}</Text>
-          <Text style={styles.reviewDate}>
+          <Text style={[styles.reviewerName, {
+            color: isDarkMode ? theme.text : '#333'
+          }]}>{item.user_name || 'Anonymous User'}</Text>
+          <Text style={[styles.reviewDate, {
+            color: isDarkMode ? theme.textSecondary : '#999'
+          }]}>
             {new Date(item.created_at).toLocaleDateString()}
           </Text>
         </View>
         <View style={styles.reviewRating}>
           {renderStars(item.rating)}
-          <Text style={styles.satisfactionLabel}>
+          <Text style={[styles.satisfactionLabel, {
+            color: isDarkMode ? theme.textSecondary : '#666'
+          }]}>
             {item.satisfaction === 'positive' ? 'Satisfied' : 
              item.satisfaction === 'negative' ? 'Dissatisfied' : 'Neutral'}
           </Text>
@@ -192,37 +203,58 @@ const AgencyReviewScreen = ({ route, navigation }) => {
       </View>
       
       {item.comment && (
-        <Text style={styles.reviewComment}>{item.comment}</Text>
+        <Text style={[styles.reviewComment, {
+          color: isDarkMode ? theme.textSecondary : '#666'
+        }]}>{item.comment}</Text>
       )}
     </View>
   );
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.loadingContainer, {
+        backgroundColor: isDarkMode ? theme.background : '#f5f7fa'
+      }]}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading reviews...</Text>
+        <Text style={[styles.loadingText, {
+          color: isDarkMode ? theme.textSecondary : '#666'
+        }]}>Loading reviews...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, {
+      backgroundColor: isDarkMode ? theme.background : '#f5f7fa'
+    }]}>
+      <View style={[styles.header, {
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderBottomColor: isDarkMode ? '#444' : undefined,
+        borderBottomWidth: isDarkMode ? 1 : 0
+      }]}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={isDarkMode ? theme.text : "#333"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{agencyName} Reviews</Text>
+        <Text style={[styles.headerTitle, {
+          color: isDarkMode ? theme.text : '#333'
+        }]}>{agencyName} Reviews</Text>
       </View>
       
-      <View style={styles.summaryContainer}>
+      <View style={[styles.summaryContainer, {
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderBottomColor: isDarkMode ? '#444' : '#eee'
+      }]}>
         <View style={styles.ratingContainer}>
-          <Text style={styles.averageRating}>{averageRating.toFixed(1)}</Text>
+          <Text style={[styles.averageRating, {
+            color: isDarkMode ? theme.text : '#333'
+          }]}>{averageRating.toFixed(1)}</Text>
           {renderStars(averageRating)}
-          <Text style={styles.reviewsCount}>({reviewsCount} reviews)</Text>
+          <Text style={[styles.reviewsCount, {
+            color: isDarkMode ? theme.textSecondary : '#666'
+          }]}>({reviewsCount} reviews)</Text>
         </View>
         
         {canAddReview && (
@@ -239,7 +271,9 @@ const AgencyReviewScreen = ({ route, navigation }) => {
       {error ? (
         <View style={styles.errorContainer}>
           <MaterialIcons name="error-outline" size={24} color="#F44336" />
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={[styles.errorText, {
+            color: isDarkMode ? '#ff6b6b' : '#F44336'
+          }]}>{error}</Text>
           <TouchableOpacity 
             style={styles.retryButton}
             onPress={handleRefresh}
@@ -256,9 +290,13 @@ const AgencyReviewScreen = ({ route, navigation }) => {
           refreshing={refreshing}
           onRefresh={handleRefresh}
           ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <MaterialIcons name="rate-review" size={48} color="#CCCCCC" />
-              <Text style={styles.emptyText}>No reviews yet</Text>
+            <View style={[styles.emptyContainer, {
+              backgroundColor: isDarkMode ? 'transparent' : undefined
+            }]}>
+              <MaterialIcons name="rate-review" size={48} color={isDarkMode ? '#555' : "#CCCCCC"} />
+              <Text style={[styles.emptyText, {
+                color: isDarkMode ? theme.textSecondary : '#999'
+              }]}>No reviews yet</Text>
               {canAddReview && (
                 <TouchableOpacity 
                   style={styles.beFirstButton}
@@ -283,20 +321,28 @@ const AgencyReviewScreen = ({ route, navigation }) => {
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.modalContainer}
         >
-          <View style={styles.reviewFormContainer}>
-            <View style={styles.reviewFormHeader}>
-              <Text style={styles.reviewFormTitle}>Rate {agencyName}</Text>
+          <View style={[styles.reviewFormContainer, {
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff'
+          }]}>
+            <View style={[styles.reviewFormHeader, {
+              borderBottomColor: isDarkMode ? '#444' : '#eee'
+            }]}>
+              <Text style={[styles.reviewFormTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Rate {agencyName}</Text>
               <TouchableOpacity 
                 style={styles.closeButton}
                 onPress={() => setShowReviewForm(false)}
               >
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={isDarkMode ? theme.text : "#333"} />
               </TouchableOpacity>
             </View>
             
             <ScrollView style={styles.reviewFormContent}>
               <View style={styles.ratingSelector}>
-                <Text style={styles.sectionLabel}>Your Rating:</Text>
+                <Text style={[styles.sectionLabel, {
+                  color: isDarkMode ? theme.text : '#333'
+                }]}>Your Rating:</Text>
                 <View style={styles.starSelector}>
                   {[1, 2, 3, 4, 5].map(star => (
                     <TouchableOpacity 
@@ -315,11 +361,14 @@ const AgencyReviewScreen = ({ route, navigation }) => {
               </View>
               
               <View style={styles.satisfactionSelector}>
-                <Text style={styles.sectionLabel}>How satisfied are you?</Text>
+                <Text style={[styles.sectionLabel, {
+                  color: isDarkMode ? theme.text : '#333'
+                }]}>How satisfied are you?</Text>
                 <View style={styles.satisfactionOptions}>
                   <TouchableOpacity 
                     style={[
                       styles.satisfactionOption, 
+                      { borderColor: isDarkMode ? '#444' : '#ddd' },
                       satisfaction === 'positive' && styles.selectedSatisfactionPositive
                     ]}
                     onPress={() => setSatisfaction('positive')}
@@ -331,6 +380,7 @@ const AgencyReviewScreen = ({ route, navigation }) => {
                     />
                     <Text style={[
                       styles.satisfactionText,
+                      { color: isDarkMode && satisfaction !== 'positive' ? theme.text : '#666' },
                       satisfaction === 'positive' && styles.selectedSatisfactionText
                     ]}>
                       Satisfied
@@ -340,6 +390,7 @@ const AgencyReviewScreen = ({ route, navigation }) => {
                   <TouchableOpacity 
                     style={[
                       styles.satisfactionOption, 
+                      { borderColor: isDarkMode ? '#444' : '#ddd' },
                       satisfaction === 'neutral' && styles.selectedSatisfactionNeutral
                     ]}
                     onPress={() => setSatisfaction('neutral')}
@@ -351,6 +402,7 @@ const AgencyReviewScreen = ({ route, navigation }) => {
                     />
                     <Text style={[
                       styles.satisfactionText,
+                      { color: isDarkMode && satisfaction !== 'neutral' ? theme.text : '#666' },
                       satisfaction === 'neutral' && styles.selectedSatisfactionText
                     ]}>
                       Neutral
@@ -360,6 +412,7 @@ const AgencyReviewScreen = ({ route, navigation }) => {
                   <TouchableOpacity 
                     style={[
                       styles.satisfactionOption, 
+                      { borderColor: isDarkMode ? '#444' : '#ddd' },
                       satisfaction === 'negative' && styles.selectedSatisfactionNegative
                     ]}
                     onPress={() => setSatisfaction('negative')}
@@ -371,6 +424,7 @@ const AgencyReviewScreen = ({ route, navigation }) => {
                     />
                     <Text style={[
                       styles.satisfactionText,
+                      { color: isDarkMode && satisfaction !== 'negative' ? theme.text : '#666' },
                       satisfaction === 'negative' && styles.selectedSatisfactionText
                     ]}>
                       Dissatisfied
@@ -380,10 +434,17 @@ const AgencyReviewScreen = ({ route, navigation }) => {
               </View>
               
               <View style={styles.commentContainer}>
-                <Text style={styles.sectionLabel}>Your Comments (Optional):</Text>
+                <Text style={[styles.sectionLabel, {
+                  color: isDarkMode ? theme.text : '#333'
+                }]}>Your Comments (Optional):</Text>
                 <TextInput
-                  style={styles.commentInput}
+                  style={[styles.commentInput, {
+                    borderColor: isDarkMode ? '#444' : '#ddd',
+                    backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#fff',
+                    color: isDarkMode ? theme.text : '#333'
+                  }]}
                   placeholder="Share your experience with this agency..."
+                  placeholderTextColor={isDarkMode ? '#777' : '#999'}
                   multiline={true}
                   numberOfLines={4}
                   value={comment}
@@ -392,12 +453,19 @@ const AgencyReviewScreen = ({ route, navigation }) => {
               </View>
             </ScrollView>
             
-            <View style={styles.reviewFormFooter}>
+            <View style={[styles.reviewFormFooter, {
+              borderTopColor: isDarkMode ? '#444' : '#eee'
+            }]}>
               <TouchableOpacity 
-                style={styles.cancelButton}
+                style={[styles.cancelButton, {
+                  borderColor: isDarkMode ? '#444' : '#ddd',
+                  backgroundColor: isDarkMode ? '#333' : 'transparent'
+                }]}
                 onPress={() => setShowReviewForm(false)}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
+                <Text style={[styles.cancelButtonText, {
+                  color: isDarkMode ? theme.textSecondary : '#666'
+                }]}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 

@@ -6,7 +6,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import * as Notifications from 'expo-notifications';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, StatusBar, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, StatusBar, StyleSheet, Text, View } from 'react-native';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import NotificationService from './supabase/services/NotificationService';
 import { ThemeProvider, useTheme } from './ThemeContext';
@@ -15,7 +15,9 @@ import { ThemeProvider, useTheme } from './ThemeContext';
 import AgencyFeedbackScreen from './components/AgencyFeedbackScreen';
 import { MessageDetails, Messages } from './components/AgencyMessagesScreen';
 import ChatComponent from './components/ChatComponent';
+import CollectionAgenciesForBusinessScreen from './components/CollectionAgenciesForBusinessScreen';
 import CollectionAgenciesScreen from './components/CollectionAgenciesScreen';
+import CollectionTypeSelectionScreen from './components/CollectionTypeSelectionScreen';
 import EditProfileScreen from './components/EditProfileScreen';
 import FeedbackScreen from './components/FeedbackScreen';
 import GoogleMapScreen from './components/GoogleMapScreen';
@@ -49,6 +51,8 @@ import { supabase } from './supabase/config/supabaseConfig';
 import ProfileManager from './supabase/manager/auth/ProfileManager';
 import ConstituencyManager from './supabase/manager/constituencychange/ConstituencyManager';
 import MessageManager from './supabase/manager/messaging/MessageManager';
+import NewsScreen from './components/NewsScreen';
+import NewsDetailScreen from './components/NewsDetailScreen';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -242,7 +246,7 @@ function MainTabNavigator() {
       />
       <Tab.Screen 
         name="Home" 
-        component={HomePageScreen} 
+        component={NewsScreen} 
         options={{
           tabBarIcon: ({ color, size, focused }) => (
             <Feather 
@@ -256,6 +260,16 @@ function MainTabNavigator() {
     </Tab.Navigator>
   );
 }
+
+// Placeholder for missing screen
+const BusinessSubscriptionPlanScreen = ({ navigation, route }) => {
+  return (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <Text>Business Subscription Plan Screen</Text>
+      <Text>Coming Soon</Text>
+    </View>
+  );
+};
 
 // Main App component
 const App = () => {
@@ -305,7 +319,9 @@ const App = () => {
     prefixes: [
       'konserveapp://', 
       'https://konserveapp.com',
-      'https://auth.expo.io/@princegoku/konserve'
+      'https://auth.expo.io/@princegoku/konserve',
+      'exp://192.168.100.13:8081',
+      'exp://localhost:8081'
     ],
     config: {
       screens: {
@@ -622,7 +638,12 @@ const AppContent = ({ navigationRef, linking }) => {
             <Stack.Screen name="MarketPlace" component={WasteMarketplace} />
             <Stack.Screen name="MarketDirectChat" component={MarketDirectChat} />
             <Stack.Screen name="MarketInbox" component={MarketMessagesInbox} />
+            <Stack.Screen name="CollectionAgenciesForBusiness" component={CollectionAgenciesForBusinessScreen} />
             <Stack.Screen name="AgencyMessageDetail" component={AgencyMessageDetailScreen} />
+            <Stack.Screen name="BusinessSubscriptionPlanScreen" component={BusinessSubscriptionPlanScreen} />
+            <Stack.Screen name="CollectionTypeSelection" component={CollectionTypeSelectionScreen} />
+            <Stack.Screen name="News" component={NewsScreen} />
+            <Stack.Screen name="NewsDetail" component={NewsDetailScreen} />
           </>
         )}
       </Stack.Navigator>

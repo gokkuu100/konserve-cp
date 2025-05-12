@@ -99,14 +99,30 @@ const OptionsScreen = ({ navigation, route }) => {
 
   const handleSignOut = async () => {
     try {
-      await signOut();
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Login' }],
-      });
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign Out',
+            style: 'destructive',
+            onPress: async () => {
+              try {
+                await signOut();
+                // The AuthContext will handle the navigation automatically
+                // when isAuthenticated state changes, the App.js conditional rendering will take over
+              } catch (error) {
+                console.error('Error signing out:', error);
+                Alert.alert('Error', `Failed to sign out: ${error.message}`);
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
-      console.error('Error signing out:', error);
-      Alert.alert('Error', `Failed to sign out: ${error.message}`);
+      console.error('Error in sign out process:', error);
+      Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
     }
   };
 

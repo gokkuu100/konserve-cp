@@ -157,11 +157,8 @@ const SettingsScreen = ({ navigation }) => {
               // Call the signOut function from auth context
               await signOut();
               
-              // Reset navigation to Login screen
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }]
-              });
+              // The AuthContext will handle the navigation automatically
+              // when isAuthenticated state changes, the App.js conditional rendering will take over
             } catch (error) {
               console.error('Sign out error:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');

@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  FlatList,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-  ActivityIndicator
-} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase/config/supabaseConfig';
 import MarketChatManager from '../supabase/manager/marketplace/MarketChatManager';
+import { useTheme } from '../ThemeContext';
 import { formatTimeAgo } from '../utils/timeUtils';
 
 const MarketMessagesInbox = () => {
   const navigation = useNavigation();
   const { user } = useAuth();
+  const { isDarkMode, theme } = useTheme();
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -88,7 +90,13 @@ const MarketMessagesInbox = () => {
   // Render a conversation item
   const renderConversationItem = ({ item }) => (
     <TouchableOpacity 
-      style={styles.conversationItem}
+      style={[
+        styles.conversationItem,
+        { 
+          borderBottomColor: isDarkMode ? '#333' : '#f0f0f0',
+          backgroundColor: isDarkMode ? theme.cardBackground : '#fff'
+        }
+      ]}
       onPress={() => openDirectChat(item.buyer)}
     >
       <View style={styles.avatarContainer}>
@@ -97,27 +105,42 @@ const MarketMessagesInbox = () => {
           style={styles.avatar} 
         />
         {item.unreadCount > 0 && (
-          <View style={styles.badgeContainer}>
+          <View style={[
+            styles.badgeContainer,
+            { backgroundColor: theme.primary || '#4CAF50' }
+          ]}>
             <Text style={styles.badgeText}>{item.unreadCount}</Text>
           </View>
         )}
       </View>
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
-          <Text style={styles.buyerName}>{item.buyer.name}</Text>
-          <Text style={styles.timestamp}>
+          <Text style={[
+            styles.buyerName,
+            { color: isDarkMode ? theme.text : '#333' }
+          ]}>{item.buyer.name}</Text>
+          <Text style={[
+            styles.timestamp,
+            { color: isDarkMode ? '#888' : '#999' }
+          ]}>
             {formatTimeAgo(item.lastMessage.created_at)}
           </Text>
         </View>
         <View style={styles.messagePreviewContainer}>
           {item.lastMessage.is_image ? (
             <View style={styles.imagePreview}>
-              <Ionicons name="image-outline" size={16} color="#4CAF50" />
-              <Text style={styles.messagePreview}>Photo</Text>
+              <Ionicons name="image-outline" size={16} color={theme.primary || '#4CAF50'} />
+              <Text style={[
+                styles.messagePreview,
+                { color: isDarkMode ? theme.textSecondary : '#666' }
+              ]}>Photo</Text>
             </View>
           ) : (
             <Text 
-              style={styles.messagePreview}
+              style={[
+                styles.messagePreview,
+                { color: isDarkMode ? theme.textSecondary : '#666' }
+              ]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -125,7 +148,10 @@ const MarketMessagesInbox = () => {
             </Text>
           )}
           {item.unreadCount > 0 && (
-            <View style={styles.dotIndicator} />
+            <View style={[
+              styles.dotIndicator,
+              { backgroundColor: theme.primary || '#4CAF50' }
+            ]} />
           )}
         </View>
       </View>
@@ -134,19 +160,28 @@ const MarketMessagesInbox = () => {
 
   // Enhanced header component
   const renderHeader = () => (
-    <View style={styles.header}>
+    <View style={[
+      styles.header,
+      { backgroundColor: isDarkMode ? theme.cardBackground : '#fff' }
+    ]}>
       <View style={styles.headerContent}>
         <TouchableOpacity 
           style={styles.backButton}
           onPress={() => navigation.goBack()}
           hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}
         >
-          <Ionicons name="chevron-back" size={28} color="#333" />
+          <Ionicons name="chevron-back" size={28} color={isDarkMode ? theme.text : '#333'} />
         </TouchableOpacity>
         
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Inbox</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[
+            styles.headerTitle,
+            { color: isDarkMode ? theme.text : '#333' }
+          ]}>Inbox</Text>
+          <Text style={[
+            styles.headerSubtitle,
+            { color: isDarkMode ? theme.textSecondary : '#666' }
+          ]}>
             {loading ? 'Loading conversations...' : 
               conversations.length > 0 ? 
                 `${conversations.length} conversations` : 'No conversations yet'}
@@ -157,33 +192,51 @@ const MarketMessagesInbox = () => {
           style={styles.searchButton}
           hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}
         >
-          <Ionicons name="search" size={24} color="#4CAF50" />
+          <Ionicons name="search" size={24} color={theme.primary || '#4CAF50'} />
         </TouchableOpacity>
       </View>
       
-      <View style={styles.headerDivider} />
+      <View style={[
+        styles.headerDivider,
+        { backgroundColor: isDarkMode ? '#333' : '#f0f0f0' }
+      ]} />
     </View>
   );
 
   // Main render
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[
+      styles.container,
+      { backgroundColor: isDarkMode ? theme.background : '#fff' }
+    ]}>
       {renderHeader()}
       
       {loading && !refreshing ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading conversations...</Text>
+          <ActivityIndicator size="large" color={theme.primary || '#4CAF50'} />
+          <Text style={[
+            styles.loadingText,
+            { color: isDarkMode ? theme.textSecondary : '#666' }
+          ]}>Loading conversations...</Text>
         </View>
       ) : conversations.length === 0 ? (
         <View style={styles.emptyContainer}>
-          <Ionicons name="chatbubble-ellipses-outline" size={64} color="#DDD" />
-          <Text style={styles.emptyText}>No conversations yet</Text>
-          <Text style={styles.emptySubText}>
+          <Ionicons name="chatbubble-ellipses-outline" size={64} color={isDarkMode ? '#444' : '#DDD'} />
+          <Text style={[
+            styles.emptyText,
+            { color: isDarkMode ? theme.text : '#333' }
+          ]}>No conversations yet</Text>
+          <Text style={[
+            styles.emptySubText,
+            { color: isDarkMode ? theme.textSecondary : '#666' }
+          ]}>
             Start chatting with waste buyers in the marketplace
           </Text>
           <TouchableOpacity 
-            style={styles.browseButton}
+            style={[
+              styles.browseButton,
+              { backgroundColor: theme.primary || '#4CAF50' }
+            ]}
             onPress={() => navigation.navigate('WasteMarketplace')}
           >
             <Text style={styles.browseButtonText}>Browse Marketplace</Text>
@@ -194,7 +247,10 @@ const MarketMessagesInbox = () => {
           data={conversations}
           renderItem={renderConversationItem}
           keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.conversationList}
+          contentContainerStyle={[
+            styles.conversationList,
+            { backgroundColor: isDarkMode ? theme.background : '#fff' }
+          ]}
           refreshing={refreshing}
           onRefresh={handleRefresh}
         />
@@ -292,7 +348,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   avatarContainer: {
     position: 'relative',

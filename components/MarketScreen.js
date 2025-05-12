@@ -17,11 +17,13 @@ import {
 import { useAuth } from '../contexts/AuthContext'; // Adjust path as needed for your auth context
 import MarketChatManager from '../supabase/manager/marketplace/MarketChatManager';
 import MarketListingManager from '../supabase/manager/marketplace/MarketListing';
+import { useTheme } from '../ThemeContext';
 
 // Main Marketplace Component
 const WasteMarketplace = () => {
   const navigation = useNavigation();
   const { user } = useAuth(); // Get the current user from your auth context
+  const { isDarkMode, theme } = useTheme();
   const [buyers, setBuyers] = useState([]);
   const [filteredBuyers, setFilteredBuyers] = useState([]);
   const [selectedBuyer, setSelectedBuyer] = useState(null);
@@ -219,21 +221,29 @@ const WasteMarketplace = () => {
         onRequestClose={() => setWasteTypeModalVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.filterModalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Waste Type</Text>
+          <View style={[styles.filterModalContent, { 
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff' 
+          }]}>
+            <View style={[styles.modalHeader, { 
+              borderBottomColor: isDarkMode ? '#444' : '#f0f0f0',
+              borderBottomWidth: 1,
+              paddingBottom: 16
+            }]}>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                Select Waste Type
+              </Text>
               <TouchableOpacity onPress={() => setWasteTypeModalVisible(false)}>
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={isDarkMode ? theme.text : '#333'} />
               </TouchableOpacity>
             </View>
             
             {wasteTypes.length === 0 ? (
               <View style={styles.noDataContainer}>
-                <Text style={styles.noDataText}>
+                <Text style={[styles.noDataText, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
                   No waste types found. Tap below to extract from loaded buyers.
                 </Text>
                 <TouchableOpacity 
-                  style={styles.refreshButton}
+                  style={[styles.refreshButton, { backgroundColor: theme.primary || '#4CAF50' }]}
                   onPress={extractWasteTypesFromBuyers}
                 >
                   <Text style={styles.refreshButtonText}>Extract Waste Types</Text>
@@ -242,30 +252,36 @@ const WasteMarketplace = () => {
             ) : (
               <ScrollView style={styles.filterOptionsList}>
                 <TouchableOpacity 
-                  style={styles.filterOption}
+                  style={[styles.filterOption, { 
+                    borderBottomColor: isDarkMode ? '#444' : '#f0f0f0' 
+                  }]}
                   onPress={() => handleWasteTypeChange(null)}
                 >
                   <Text style={[
                     styles.filterOptionText,
-                    activeFilters.wasteType === null && styles.activeFilterOptionText
+                    { color: isDarkMode ? theme.text : '#333' },
+                    activeFilters.wasteType === null && { color: theme.primary || '#4CAF50', fontWeight: 'bold' }
                   ]}>All Types</Text>
                   {activeFilters.wasteType === null && (
-                    <Ionicons name="checkmark" size={20} color="#4CAF50" />
+                    <Ionicons name="checkmark" size={20} color={theme.primary || '#4CAF50'} />
                   )}
                 </TouchableOpacity>
                 
                 {wasteTypes.map((type, index) => (
                   <TouchableOpacity 
                     key={index}
-                    style={styles.filterOption}
+                    style={[styles.filterOption, { 
+                      borderBottomColor: isDarkMode ? '#444' : '#f0f0f0' 
+                    }]}
                     onPress={() => handleWasteTypeChange(type)}
                   >
                     <Text style={[
                       styles.filterOptionText,
-                      activeFilters.wasteType === type && styles.activeFilterOptionText
+                      { color: isDarkMode ? theme.text : '#333' },
+                      activeFilters.wasteType === type && { color: theme.primary || '#4CAF50', fontWeight: 'bold' }
                     ]}>{type}</Text>
                     {activeFilters.wasteType === type && (
-                      <Ionicons name="checkmark" size={20} color="#4CAF50" />
+                      <Ionicons name="checkmark" size={20} color={theme.primary || '#4CAF50'} />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -285,32 +301,43 @@ const WasteMarketplace = () => {
       visible={buyerTypeModalVisible}
       onRequestClose={() => setBuyerTypeModalVisible(false)}
     >
-        <View style={styles.modalContainer}>
-        <View style={styles.filterModalContent}>
-            <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Select Buyer Type</Text>
+      <View style={styles.modalContainer}>
+        <View style={[styles.filterModalContent, { 
+          backgroundColor: isDarkMode ? theme.cardBackground : '#fff' 
+        }]}>
+          <View style={[styles.modalHeader, { 
+            borderBottomColor: isDarkMode ? '#444' : '#f0f0f0',
+            borderBottomWidth: 1,
+            paddingBottom: 16
+          }]}>
+            <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+              Select Buyer Type
+            </Text>
             <TouchableOpacity onPress={() => setBuyerTypeModalVisible(false)}>
-              <Ionicons name="close" size={24} color="#333" />
-              </TouchableOpacity>
-            </View>
+              <Ionicons name="close" size={24} color={isDarkMode ? theme.text : '#333'} />
+            </TouchableOpacity>
+          </View>
             
           <ScrollView style={styles.filterOptionsList}>
             {buyerTypes.map((type, index) => (
               <TouchableOpacity 
                 key={index}
-                style={styles.filterOption}
+                style={[styles.filterOption, { 
+                  borderBottomColor: isDarkMode ? '#444' : '#f0f0f0' 
+                }]}
                 onPress={() => handleBuyerTypeChange(type)}
               >
                 <Text style={[
                   styles.filterOptionText,
-                  activeFilters.buyerType === type && styles.activeFilterOptionText
+                  { color: isDarkMode ? theme.text : '#333' },
+                  activeFilters.buyerType === type && { color: theme.primary || '#4CAF50', fontWeight: 'bold' }
                 ]}>{type}</Text>
                 {activeFilters.buyerType === type && (
-                  <Ionicons name="checkmark" size={20} color="#4CAF50" />
+                  <Ionicons name="checkmark" size={20} color={theme.primary || '#4CAF50'} />
                 )}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
         </View>
       </View>
     </Modal>
@@ -319,7 +346,10 @@ const WasteMarketplace = () => {
   // Render individual buyer card
   const renderBuyerCard = ({ item }) => (
     <TouchableOpacity 
-      style={styles.buyerCard} 
+      style={[styles.buyerCard, { 
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderColor: isDarkMode ? '#444' : '#e0e0e0'
+      }]} 
       onPress={() => openDetailsModal(item)}
     >
       <View style={styles.buyerCardHeader}>
@@ -328,8 +358,12 @@ const WasteMarketplace = () => {
           style={styles.buyerLogo} 
         />
         <View style={styles.buyerCardHeaderText}>
-          <Text style={styles.buyerName}>{item.name}</Text>
-          <View style={styles.buyerTypeContainer}>
+          <Text style={[styles.buyerName, { color: isDarkMode ? theme.text : '#333' }]}>
+            {item.name}
+          </Text>
+          <View style={[styles.buyerTypeContainer, { 
+            backgroundColor: isDarkMode ? '#1a331a' : '#E8F5E9' 
+          }]}>
             <Text style={styles.buyerType}>{item.type}</Text>
           </View>
         </View>
@@ -337,41 +371,53 @@ const WasteMarketplace = () => {
       
       <View style={styles.buyerCardDetails}>
         <View style={styles.locationContainer}>
-          <Ionicons name="location-sharp" size={16} color="#4CAF50" />
-          <Text style={styles.buyerLocation}>{item.location}</Text>
+          <Ionicons name="location-sharp" size={16} color={theme.primary || "#4CAF50"} />
+          <Text style={[styles.buyerLocation, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            {item.location}
+          </Text>
         </View>
       </View>
       
       <View style={styles.wasteTypesContainer}>
         {item.wasteTypes.map((type, index) => (
-          <View key={index} style={styles.wasteTypeChip}>
-            <Text style={styles.wasteTypeText}>{type}</Text>
+          <View key={index} style={[styles.wasteTypeChip, { 
+            backgroundColor: isDarkMode ? '#333' : '#ECEFF1' 
+          }]}>
+            <Text style={[styles.wasteTypeText, { color: isDarkMode ? '#ccc' : '#546E7A' }]}>
+              {type}
+            </Text>
           </View>
         ))}
       </View>
       
       <View style={styles.pricingContainer}>
         {Object.entries(item.pricing).slice(0, 2).map(([type, price], index) => (
-          <Text key={index} style={styles.pricingText}>
-            {type}: <Text style={styles.priceValue}>{price}</Text>
+          <Text key={index} style={[styles.pricingText, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            {type}: <Text style={[styles.priceValue, { color: theme.primary || '#4CAF50' }]}>{price}</Text>
           </Text>
         ))}
         {Object.keys(item.pricing).length > 2 && (
-          <Text style={styles.pricingText}>+{Object.keys(item.pricing).length - 2} more</Text>
+          <Text style={[styles.pricingText, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            +{Object.keys(item.pricing).length - 2} more
+          </Text>
         )}
       </View>
       
       <View style={styles.serviceOptionsContainer}>
         {item.serviceOptions.includes('Pickup') && (
           <View style={styles.serviceOption}>
-            <FontAwesome5 name="truck-pickup" size={14} color="#4CAF50" />
-            <Text style={styles.serviceOptionText}>Pickup</Text>
+            <FontAwesome5 name="truck-pickup" size={14} color={theme.primary || "#4CAF50"} />
+            <Text style={[styles.serviceOptionText, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Pickup
+            </Text>
           </View>
         )}
         {item.serviceOptions.includes('Drop-off') && (
           <View style={styles.serviceOption}>
-            <FontAwesome5 name="hand-holding" size={14} color="#4CAF50" />
-            <Text style={styles.serviceOptionText}>Drop-off</Text>
+            <FontAwesome5 name="hand-holding" size={14} color={theme.primary || "#4CAF50"} />
+            <Text style={[styles.serviceOptionText, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Drop-off
+            </Text>
           </View>
         )}
       </View>
@@ -387,59 +433,102 @@ const WasteMarketplace = () => {
       onRequestClose={() => setDetailsModalVisible(false)}
     >
       {selectedBuyer && (
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+        <View style={[styles.modalContainer, {
+          backgroundColor: 'rgba(0, 0, 0, 0.9)'
+        }]}>
+          <View style={[styles.modalContent, { 
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            opacity: 1,
+            borderTopWidth: isDarkMode ? 1 : 0,
+            borderTopColor: isDarkMode ? '#444' : 'transparent',
+          }]}>
+            <View style={[styles.modalHeader, { 
+              borderBottomColor: isDarkMode ? '#444' : '#f0f0f0',
+              borderBottomWidth: 1,
+              paddingBottom: 16,
+              backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            }]}>
               <TouchableOpacity onPress={() => setDetailsModalVisible(false)}>
-                <Ionicons name="arrow-back" size={24} color="#333" />
+                <Ionicons name="arrow-back" size={24} color={isDarkMode ? theme.text : '#333'} />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Buyer Details</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                Buyer Details
+              </Text>
               <View style={{ width: 24 }} />
             </View>
             
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              showsVerticalScrollIndicator={false}
+              style={{
+                backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+              }}
+            >
               <View style={styles.buyerDetailsHeader}>
                 <Image source={{ uri: selectedBuyer.logo }} style={styles.detailsLogo} />
                 <View style={styles.buyerHeaderInfo}>
-                  <Text style={styles.detailsName}>{selectedBuyer.name}</Text>
-                  <View style={styles.detailsTypeContainer}>
+                  <Text style={[styles.detailsName, { color: isDarkMode ? theme.text : '#333' }]}>
+                    {selectedBuyer.name}
+                  </Text>
+                  <View style={[styles.detailsTypeContainer, { 
+                    backgroundColor: isDarkMode ? '#1a331a' : '#E8F5E9' 
+                  }]}>
                     <Text style={styles.detailsType}>{selectedBuyer.type}</Text>
                   </View>
                   <View style={styles.detailsRatingContainer}>
                     <Ionicons name="star" size={16} color="#FFC107" />
-                    <Text style={styles.detailsRating}>{selectedBuyer.rating}</Text>
-                    <Text style={styles.detailsReviews}>({selectedBuyer.reviews} reviews)</Text>
+                    <Text style={[styles.detailsRating, { color: isDarkMode ? theme.text : '#333' }]}>
+                      {selectedBuyer.rating}
+                    </Text>
+                    <Text style={[styles.detailsReviews, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                      ({selectedBuyer.reviews} reviews)
+                    </Text>
                   </View>
                 </View>
               </View>
               
               <View style={styles.detailsSection}>
                 <View style={styles.detailsLocationContainer}>
-                  <Ionicons name="location-sharp" size={18} color="#4CAF50" />
-                  <Text style={styles.detailsLocation}>{selectedBuyer.location}</Text>
+                  <Ionicons name="location-sharp" size={18} color={theme.primary || "#4CAF50"} />
+                  <Text style={[styles.detailsLocation, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                    {selectedBuyer.location}
+                  </Text>
                 </View>
                 
-                <Text style={styles.sectionTitle}>About</Text>
-                <Text style={styles.detailsDescription}>{selectedBuyer.description}</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>About</Text>
+                <Text style={[styles.detailsDescription, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                  {selectedBuyer.description}
+                </Text>
                 
-                <Text style={styles.sectionTitle}>Waste Types & Pricing</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Waste Types & Pricing
+                </Text>
                 <View style={styles.detailsPricingContainer}>
                   {Object.entries(selectedBuyer.pricing).map(([type, price], index) => (
-                    <View key={index} style={styles.detailsPricingItem}>
-                      <Text style={styles.detailsWasteType}>{type}</Text>
-                      <Text style={styles.detailsPrice}>{price}</Text>
+                    <View key={index} style={[styles.detailsPricingItem, { 
+                      borderBottomColor: isDarkMode ? '#444' : '#f0f0f0' 
+                    }]}>
+                      <Text style={[styles.detailsWasteType, { color: isDarkMode ? theme.text : '#333' }]}>
+                        {type}
+                      </Text>
+                      <Text style={[styles.detailsPrice, { color: theme.primary || '#4CAF50' }]}>
+                        {price}
+                      </Text>
                     </View>
                   ))}
                 </View>
                 
-                <Text style={styles.sectionTitle}>Service Options</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Service Options
+                </Text>
                 <View style={styles.detailsServiceContainer}>
                   {selectedBuyer.serviceOptions.map((option, index) => (
-                    <View key={index} style={styles.detailsServiceItem}>
+                    <View key={index} style={[styles.detailsServiceItem, { 
+                      backgroundColor: isDarkMode ? '#1a331a' : '#E8F5E9' 
+                    }]}>
                       <FontAwesome5 
                         name={option === 'Pickup' ? 'truck-pickup' : 'hand-holding'} 
                         size={16} 
-                        color="#4CAF50" 
+                        color={theme.primary || "#4CAF50"} 
                       />
                       <Text style={styles.detailsServiceText}>{option}</Text>
                     </View>
@@ -448,13 +537,21 @@ const WasteMarketplace = () => {
                 
                 {selectedBuyer.serviceOptions.includes('Pickup') && (
                   <>
-                    <Text style={styles.sectionTitle}>Pickup Details</Text>
-                    <Text style={styles.detailsPickup}>{selectedBuyer.pickupDetails}</Text>
+                    <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                      Pickup Details
+                    </Text>
+                    <Text style={[styles.detailsPickup, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                      {selectedBuyer.pickupDetails}
+                    </Text>
                   </>
                 )}
                 
-                <Text style={styles.sectionTitle}>Working Hours</Text>
-                <Text style={styles.detailsHours}>{selectedBuyer.workingHours}</Text>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Working Hours
+                </Text>
+                <Text style={[styles.detailsHours, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                  {selectedBuyer.workingHours}
+                </Text>
               </View>
               
               <View style={styles.actionButtonsContainer}>
@@ -490,13 +587,27 @@ const WasteMarketplace = () => {
       onRequestClose={() => setContactModalVisible(false)}
     >
       {selectedBuyer && (
-        <View style={styles.modalContainer}>
-          <View style={styles.contactModalContent}>
-            <View style={styles.modalHeader}>
+        <View style={[styles.modalContainer, {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)'
+        }]}>
+          <View style={[styles.contactModalContent, { 
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            opacity: 1,
+            borderTopWidth: isDarkMode ? 1 : 0,
+            borderTopColor: isDarkMode ? '#444' : 'transparent',
+          }]}>
+            <View style={[styles.modalHeader, { 
+              borderBottomColor: isDarkMode ? '#444' : '#f0f0f0',
+              borderBottomWidth: 1,
+              paddingBottom: 16,
+              backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            }]}>
               <TouchableOpacity onPress={() => setContactModalVisible(false)}>
-                <Ionicons name="arrow-back" size={24} color="#333" />
+                <Ionicons name="arrow-back" size={24} color={isDarkMode ? theme.text : '#333'} />
               </TouchableOpacity>
-              <Text style={styles.modalTitle}>Contact Details</Text>
+              <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                Contact Details
+              </Text>
               <View style={{ width: 24 }} />
             </View>
             
@@ -506,29 +617,41 @@ const WasteMarketplace = () => {
                   <Ionicons name="call" size={24} color="#fff" />
                 </View>
                 <View style={styles.contactInfoContainer}>
-                  <Text style={styles.contactLabel}>Phone</Text>
-                  <Text style={styles.contactValue}>{selectedBuyer.contactInfo.phone}</Text>
-                  <TouchableOpacity style={styles.contactAction}>
-                    <Text style={styles.contactActionText}>Call</Text>
+                  <Text style={[styles.contactLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                    Phone
+                  </Text>
+                  <Text style={[styles.contactValue, { color: isDarkMode ? theme.text : '#333' }]}>
+                    {selectedBuyer.contactInfo.phone}
+                  </Text>
+                  <TouchableOpacity style={[styles.contactAction, { 
+                    backgroundColor: isDarkMode ? '#333' : '#f0f0f0' 
+                  }]}>
+                    <Text style={[styles.contactActionText, { color: theme.primary || '#4CAF50' }]}>Call</Text>
                   </TouchableOpacity>
                 </View>
               </View>
               
               <View style={styles.contactItem}>
-                <View style={[styles.contactIconContainer, { backgroundColor: '#4CAF50' }]}>
+                <View style={[styles.contactIconContainer, { backgroundColor: theme.primary || '#4CAF50' }]}>
                   <Ionicons name="mail" size={24} color="#fff" />
                 </View>
                 <View style={styles.contactInfoContainer}>
-                  <Text style={styles.contactLabel}>Email</Text>
-                  <Text style={styles.contactValue}>{selectedBuyer.contactInfo.email}</Text>
-                  <TouchableOpacity style={styles.contactAction}>
-                    <Text style={styles.contactActionText}>Email</Text>
+                  <Text style={[styles.contactLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                    Email
+                  </Text>
+                  <Text style={[styles.contactValue, { color: isDarkMode ? theme.text : '#333' }]}>
+                    {selectedBuyer.contactInfo.email}
+                  </Text>
+                  <TouchableOpacity style={[styles.contactAction, { 
+                    backgroundColor: isDarkMode ? '#333' : '#f0f0f0' 
+                  }]}>
+                    <Text style={[styles.contactActionText, { color: theme.primary || '#4CAF50' }]}>Email</Text>
                   </TouchableOpacity>
                 </View>
               </View>
               
               <TouchableOpacity 
-                style={styles.chatButton}
+                style={[styles.chatButton, { backgroundColor: theme.primary || '#4CAF50' }]}
                 onPress={() => {
                   setContactModalVisible(false);
                   navigateToChat();
@@ -544,25 +667,34 @@ const WasteMarketplace = () => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={[styles.container, { 
+      backgroundColor: isDarkMode ? theme.background : '#f5f5f5' 
+    }]}>
+      <StatusBar style={isDarkMode ? "light" : "dark"} />
       
       {/* Header Section */}
-      <View style={styles.header}>
+      <View style={[styles.header, { 
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderBottomColor: isDarkMode ? '#333' : undefined
+      }]}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
             style={styles.backButton}
             onPress={() => navigation.navigate('MainTabs')}
           >
-            <Ionicons name="arrow-back" size={24} color="#333" />
+            <Ionicons name="arrow-back" size={24} color={isDarkMode ? theme.text : '#333'} />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
-            <Text style={styles.headerTitle}>Marketplace</Text>
-            <Text style={styles.headerSubtitle}>Turn your waste into earnings</Text>
+            <Text style={[styles.headerTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+              Marketplace
+            </Text>
+            <Text style={[styles.headerSubtitle, { color: theme.primary || '#4CAF50' }]}>
+              Turn your waste into earnings
+            </Text>
           </View>
         </View>
         <TouchableOpacity style={styles.inboxButton} onPress={navigateToInbox}>
-          <Ionicons name="mail" size={24} color="#4CAF50" />
+          <Ionicons name="mail" size={24} color={theme.primary || '#4CAF50'} />
           {unreadMessages > 0 && (
             <View style={styles.inboxBadge}>
               <Text style={styles.inboxBadgeText}>{unreadMessages}</Text>
@@ -572,8 +704,12 @@ const WasteMarketplace = () => {
       </View>
       
       {/* Filter Section */}
-      <View style={styles.filterContainer}>
-        <Text style={styles.filterTitle}>Filter by Location</Text>
+      <View style={[styles.filterContainer, { 
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff'
+      }]}>
+        <Text style={[styles.filterTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+          Filter by Location
+        </Text>
         <ScrollView 
           horizontal 
           showsHorizontalScrollIndicator={false}
@@ -582,13 +718,21 @@ const WasteMarketplace = () => {
           <TouchableOpacity 
             style={[
               styles.filterChip, 
-              activeFilters.constituency === null && styles.activeFilterChip
+              { 
+                backgroundColor: isDarkMode ? '#333' : '#f0f0f0',
+                borderColor: isDarkMode ? '#555' : '#e0e0e0'
+              },
+              activeFilters.constituency === null && {
+                backgroundColor: theme.primary || '#4CAF50',
+                borderColor: theme.primary || '#4CAF50'
+              }
             ]}
             onPress={() => setActiveFilters({...activeFilters, constituency: null})}
           >
             <Text style={[
               styles.filterChipText, 
-              activeFilters.constituency === null && styles.activeFilterChipText
+              { color: isDarkMode ? '#ccc' : '#666' },
+              activeFilters.constituency === null && { color: '#fff', fontWeight: '500' }
             ]}>
               All ({buyers.length})
             </Text>
@@ -598,14 +742,22 @@ const WasteMarketplace = () => {
             <TouchableOpacity 
               key={index} 
               style={[
-                styles.filterChip, 
-                activeFilters.constituency === constituency && styles.activeFilterChip
+                styles.filterChip,
+                { 
+                  backgroundColor: isDarkMode ? '#333' : '#f0f0f0',
+                  borderColor: isDarkMode ? '#555' : '#e0e0e0'
+                },
+                activeFilters.constituency === constituency && {
+                  backgroundColor: theme.primary || '#4CAF50',
+                  borderColor: theme.primary || '#4CAF50'
+                }
               ]}
               onPress={() => setActiveFilters({...activeFilters, constituency})}
             >
               <Text style={[
-                styles.filterChipText, 
-                activeFilters.constituency === constituency && styles.activeFilterChipText
+                styles.filterChipText,
+                { color: isDarkMode ? '#ccc' : '#666' },
+                activeFilters.constituency === constituency && { color: '#fff', fontWeight: '500' }
               ]}>
                 {constituency} ({getBuyerCountByConstituency(constituency)})
               </Text>
@@ -615,41 +767,59 @@ const WasteMarketplace = () => {
         
         <View style={styles.filterRow}>
           <View style={styles.filterGroup}>
-            <Text style={styles.filterGroupTitle}>Waste Type</Text>
+            <Text style={[styles.filterGroupTitle, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Waste Type
+            </Text>
             <TouchableOpacity 
-              style={styles.filterDropdown}
+              style={[styles.filterDropdown, { 
+                backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                borderColor: isDarkMode ? '#555' : '#e0e0e0'
+              }]}
               onPress={() => {
                 console.log('Opening waste type modal with types:', wasteTypes);
                 setWasteTypeModalVisible(true);
               }}
             >
-              <Text style={styles.filterDropdownText}>
+              <Text style={[styles.filterDropdownText, { color: isDarkMode ? theme.text : '#333' }]}>
                 {activeFilters.wasteType || 'All Types'}
               </Text>
-              <Ionicons name="chevron-down" size={16} color="#666" />
+              <Ionicons name="chevron-down" size={16} color={isDarkMode ? theme.textSecondary : '#666'} />
             </TouchableOpacity>
           </View>
           
           <View style={styles.filterGroup}>
-            <Text style={styles.filterGroupTitle}>Buyer Type</Text>
+            <Text style={[styles.filterGroupTitle, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Buyer Type
+            </Text>
             <TouchableOpacity 
-              style={styles.filterDropdown}
+              style={[styles.filterDropdown, { 
+                backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                borderColor: isDarkMode ? '#555' : '#e0e0e0'
+              }]}
               onPress={() => setBuyerTypeModalVisible(true)}
             >
-              <Text style={styles.filterDropdownText}>
+              <Text style={[styles.filterDropdownText, { color: isDarkMode ? theme.text : '#333' }]}>
                 {activeFilters.buyerType || 'All'}
               </Text>
-              <Ionicons name="chevron-down" size={16} color="#666" />
+              <Ionicons name="chevron-down" size={16} color={isDarkMode ? theme.textSecondary : '#666'} />
             </TouchableOpacity>
           </View>
         </View>
       </View>
       
       {/* Buyer List */}
-      <View style={styles.buyerListContainer}>
-        <View style={styles.buyerListHeader}>
-          <Text style={styles.buyerListTitle}>Available Buyers</Text>
-          <Text style={styles.buyerListCount}>{filteredBuyers.length} found</Text>
+      <View style={[styles.buyerListContainer, { 
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff' 
+      }]}>
+        <View style={[styles.buyerListHeader, { 
+          borderBottomColor: isDarkMode ? '#444' : '#f0f0f0' 
+        }]}>
+          <Text style={[styles.buyerListTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+            Available Buyers
+          </Text>
+          <Text style={[styles.buyerListCount, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            {filteredBuyers.length} found
+          </Text>
         </View>
         
         <FlatList
@@ -657,7 +827,9 @@ const WasteMarketplace = () => {
           renderItem={renderBuyerCard}
           keyExtractor={item => item.id}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.buyerList}
+          contentContainerStyle={[styles.buyerList, { 
+            backgroundColor: isDarkMode ? theme.background : '#fff' 
+          }]}
         />
       </View>
       
@@ -667,9 +839,13 @@ const WasteMarketplace = () => {
       
       {/* Add loading indicator */}
       {loading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#4CAF50" />
-          <Text style={styles.loadingText}>Loading marketplace data...</Text>
+        <View style={[styles.loadingContainer, { 
+          backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)' 
+        }]}>
+          <ActivityIndicator size="large" color={theme.primary || '#4CAF50'} />
+          <Text style={[styles.loadingText, { color: theme.primary || '#4CAF50' }]}>
+            Loading marketplace data...
+          </Text>
         </View>
       )}
       
@@ -947,7 +1123,7 @@ const styles = StyleSheet.create({
   // Modal Styles
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
     justifyContent: 'flex-end',
   },
   modalContent: {
@@ -956,6 +1132,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     height: '90%',
     padding: 16,
+    opacity: 1
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1127,6 +1304,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     padding: 16,
     maxHeight: '60%',
+    opacity: 1
   },
   contactDetailsContainer: {
     padding: 16,

@@ -1,32 +1,32 @@
-import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
+import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
+import React, { useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
-  StyleSheet,
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  Image,
-  TextInput,
-  Animated,
-  FlatList,
-  Dimensions,
   ActivityIndicator,
   Alert,
-  Modal
+  Animated,
+  FlatList,
+  Image,
+  Modal,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from 'react-native';
-import { Ionicons, MaterialIcons, MaterialCommunityIcons, FontAwesome } from '@expo/vector-icons';
-import MapView, { Polyline, Marker } from 'react-native-maps';
-import FullScreenRouteMap from './FullScreenRouteMap';
+import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useAuth } from '../contexts/AuthContext';
 import AgencyManager from '../supabase/manager/agency/AgencyManager';
 import FeedbackManager from '../supabase/manager/agency/FeedbackManager';
 import SubscriptionManager from '../supabase/manager/agency/SubscriptionManager';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
+import { useTheme } from '../ThemeContext';
+import FullScreenRouteMap from './FullScreenRouteMap';
 
 // Route Map Component
 const RouteMap = ({ coordinates }) => {
   const [region, setRegion] = useState(null);
+  const { isDarkMode } = useTheme();
   
   useEffect(() => {
     if (coordinates && coordinates.length > 0) {
@@ -56,6 +56,7 @@ const RouteMap = ({ coordinates }) => {
         onRegionChangeComplete={setRegion}
         zoomEnabled={true}
         scrollEnabled={true}
+        userInterfaceStyle={isDarkMode ? 'dark' : 'light'}
       >
         <Polyline
           coordinates={coordinates.map(coord => ({
@@ -101,6 +102,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
   const [canReview, setCanReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState('');
   const { user, isAuthenticated } = useAuth();
+  const { isDarkMode, theme } = useTheme();
   
   // Expose the toggleReviewForm method to parent component
   useImperativeHandle(ref, () => ({
@@ -284,9 +286,19 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
   };
 
   return (
-    <Animated.View style={[styles.agencyCard, { height: cardHeight }]}>
+    <Animated.View style={[
+      styles.agencyCard, 
+      { 
+        height: cardHeight,
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderColor: isDarkMode ? '#444' : undefined,
+        borderWidth: isDarkMode ? 1 : 0
+      }
+    ]}>
       <TouchableOpacity 
-        style={styles.cardHeader}
+        style={[styles.cardHeader, {
+          borderBottomColor: isDarkMode ? '#444' : '#f0f0f0'
+        }]}
         onPress={onToggle}
         activeOpacity={0.7}
       >
@@ -294,25 +306,35 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
           {agency.logo_url ? (
             <Image source={{ uri: agency.logo_url }} style={styles.agencyLogo} />
           ) : (
-            <View style={styles.agencyLogoPlaceholder}>
+            <View style={[styles.agencyLogoPlaceholder, {
+              backgroundColor: isDarkMode ? '#333' : '#f0f0f0'
+            }]}>
               <MaterialIcons name="business" size={24} color="#4CAF50" />
             </View>
           )}
           <View style={styles.agencyTextInfo}>
-            <Text style={styles.agencyName}>{agency.name}</Text>
+            <Text style={[styles.agencyName, {
+              color: isDarkMode ? theme.text : '#333'
+            }]}>{agency.name}</Text>
             <View style={styles.ratingContainer}>
               {renderStars(agency.rating)}
-              <Text style={styles.reviewCount}>
+              <Text style={[styles.reviewCount, {
+                color: isDarkMode ? theme.textSecondary : '#666'
+              }]}>
                 ({agency.reviews_count || 0})
               </Text>
             </View>
-            <Text style={styles.agencyLocation}>
+            <Text style={[styles.agencyLocation, {
+              color: isDarkMode ? theme.textSecondary : '#666'
+            }]}>
               {agency.constituency || 'Location not specified'}
             </Text>
             {agency.price && (
               <View style={styles.pricingContainer}>
                 <MaterialIcons name="attach-money" size={14} color="#4CAF50" />
-                <Text style={styles.pricingText}>
+                <Text style={[styles.pricingText, {
+                  color: isDarkMode ? theme.textSecondary : '#666'
+                }]}>
                   KES {agency.price} {agency.plan_type ? `(${agency.plan_type})` : '(standard)'}
                 </Text>
               </View>
@@ -322,7 +344,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
         <Ionicons 
           name={expanded ? "chevron-up" : "chevron-down"} 
           size={24} 
-          color="#757575" 
+          color={isDarkMode ? theme.textSecondary : "#757575"} 
         />
       </TouchableOpacity>
       
@@ -330,19 +352,27 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
         <View style={styles.cardExpandedContent}>
           {agency.description && (
             <View style={styles.descriptionContainer}>
-              <Text style={styles.sectionTitle}>About</Text>
-              <Text style={styles.descriptionText}>{agency.description}</Text>
+              <Text style={[styles.sectionTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>About</Text>
+              <Text style={[styles.descriptionText, {
+                color: isDarkMode ? theme.textSecondary : '#666'
+              }]}>{agency.description}</Text>
             </View>
           )}
           
           {agency.services && agency.services.length > 0 && (
             <View style={styles.servicesContainer}>
-              <Text style={styles.sectionTitle}>Services</Text>
+              <Text style={[styles.sectionTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Services</Text>
               <View style={styles.servicesList}>
                 {agency.services.map((service, index) => (
                   <View key={index} style={styles.serviceItem}>
                     <MaterialIcons name="check-circle" size={16} color="#4CAF50" />
-                    <Text style={styles.serviceText}>{service}</Text>
+                    <Text style={[styles.serviceText, {
+                      color: isDarkMode ? theme.textSecondary : '#666'
+                    }]}>{service}</Text>
                   </View>
                 ))}
               </View>
@@ -351,12 +381,20 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
           
           {agency.operational_hours && Object.keys(agency.operational_hours).length > 0 && (
             <View style={styles.hoursContainer}>
-              <Text style={styles.sectionTitle}>Operational Hours</Text>
+              <Text style={[styles.sectionTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Operational Hours</Text>
               <View style={styles.hoursList}>
                 {Object.entries(agency.operational_hours).map(([day, hours], index) => (
-                  <View key={index} style={styles.hourItem}>
-                    <Text style={styles.dayText}>{day}:</Text>
-                    <Text style={styles.hoursText}>{hours}</Text>
+                  <View key={index} style={[styles.hourItem, {
+                    borderBottomColor: isDarkMode ? '#444' : '#f0f0f0'
+                  }]}>
+                    <Text style={[styles.dayText, {
+                      color: isDarkMode ? theme.text : '#333'
+                    }]}>{day}:</Text>
+                    <Text style={[styles.hoursText, {
+                      color: isDarkMode ? theme.textSecondary : '#666'
+                    }]}>{hours}</Text>
                   </View>
                 ))}
               </View>
@@ -365,30 +403,42 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
           
           {agency.routes && agency.routes.length > 0 && (
             <View style={styles.routesContainer}>
-              <Text style={styles.sectionTitle}>Collection Routes</Text>
+              <Text style={[styles.sectionTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Collection Routes</Text>
               {agency.routes.map((route, index) => (
-                <View key={index} style={styles.routeItem}>
+                <View key={index} style={[styles.routeItem, {
+                  backgroundColor: isDarkMode ? '#222' : '#f9f9f9'
+                }]}>
                   <View style={styles.routeHeader}>
                     <MaterialIcons name="route" size={16} color="#4CAF50" />
-                    <Text style={styles.routeName}>{route.name || route.route_name || `Route ${index + 1}`}</Text>
+                    <Text style={[styles.routeName, {
+                      color: isDarkMode ? theme.text : '#333'
+                    }]}>{route.name || route.route_name || `Route ${index + 1}`}</Text>
                   </View>
                   
                   {route.route_description && (
-                    <Text style={styles.routeDescription}>{route.route_description}</Text>
+                    <Text style={[styles.routeDescription, {
+                      color: isDarkMode ? theme.textSecondary : '#666'
+                    }]}>{route.route_description}</Text>
                   )}
                   
                   <View style={styles.routeScheduleContainer}>
                     <View style={styles.scheduleItem}>
-                      <MaterialIcons name="event" size={14} color="#666" />
-                      <Text style={styles.scheduleText}>
+                      <MaterialIcons name="event" size={14} color={isDarkMode ? theme.textSecondary : "#666"} />
+                      <Text style={[styles.scheduleText, {
+                        color: isDarkMode ? theme.textSecondary : '#666'
+                      }]}>
                         {route.collection_days && route.collection_days.length > 0 ? 
                           route.collection_days.join(', ') : 'Not specified'}
                       </Text>
                     </View>
                     {route.collection_time_start && route.collection_time_end && (
                       <View style={styles.scheduleItem}>
-                        <MaterialIcons name="access-time" size={14} color="#666" />
-                        <Text style={styles.scheduleText}>
+                        <MaterialIcons name="access-time" size={14} color={isDarkMode ? theme.textSecondary : "#666"} />
+                        <Text style={[styles.scheduleText, {
+                          color: isDarkMode ? theme.textSecondary : '#666'
+                        }]}>
                           {formatTime(route.collection_time_start)} - {formatTime(route.collection_time_end)}
                         </Text>
                       </View>
@@ -399,7 +449,9 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
                     <View style={styles.routeMapContainer}>
                       <RouteMap coordinates={route.route_coordinates} />
                       <TouchableOpacity 
-                        style={styles.viewFullMapButton}
+                        style={[styles.viewFullMapButton, {
+                          backgroundColor: isDarkMode ? 'rgba(34, 34, 34, 0.9)' : 'rgba(255, 255, 255, 0.9)'
+                        }]}
                         onPress={() => handleViewFullMap(route)}
                       >
                         <Text style={styles.viewFullMapText}>View Full Map</Text>
@@ -413,31 +465,47 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
           
           {agency.areas && agency.areas.length > 0 && (
             <View style={styles.areasContainer}>
-              <Text style={styles.sectionTitle}>Operational Areas</Text>
+              <Text style={[styles.sectionTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Operational Areas</Text>
               {agency.areas.map((area, index) => {
                 const areaRoutes = agency.routes ? agency.routes.filter(route => route.area_id === area.id) : [];
                 return (
-                  <View key={index} style={styles.areaItem}>
+                  <View key={index} style={[styles.areaItem, {
+                    backgroundColor: isDarkMode ? '#222' : '#f9f9f9',
+                    borderColor: isDarkMode ? '#444' : undefined,
+                    borderWidth: isDarkMode ? 1 : 0
+                  }]}>
                     <View style={styles.areaHeader}>
                       <MaterialIcons name="location-on" size={16} color="#4CAF50" />
-                      <Text style={styles.areaName}>{area.area_name || `Area ${index + 1}`}</Text>
+                      <Text style={[styles.areaName, {
+                        color: isDarkMode ? theme.text : '#333'
+                      }]}>{area.area_name || `Area ${index + 1}`}</Text>
                     </View>
                     
                     {area.area_description && (
-                      <Text style={styles.areaDescription}>{area.area_description}</Text>
+                      <Text style={[styles.areaDescription, {
+                        color: isDarkMode ? theme.textSecondary : '#666'
+                      }]}>{area.area_description}</Text>
                     )}
                     
                     {areaRoutes.length > 0 && (
                       <View style={styles.routesContainer}>
                         {areaRoutes.map((route, idx) => (
-                          <View key={idx} style={styles.routeItem}>
+                          <View key={idx} style={[styles.routeItem, {
+                            backgroundColor: isDarkMode ? '#333' : '#f0f0f0'
+                          }]}>
                             <View style={styles.routeHeader}>
                               <MaterialIcons name="route" size={16} color="#4CAF50" />
-                              <Text style={styles.routeName}>{route.route_name || `Route ${idx + 1}`}</Text>
+                              <Text style={[styles.routeName, {
+                                color: isDarkMode ? theme.text : '#333'
+                              }]}>{route.route_name || `Route ${idx + 1}`}</Text>
                             </View>
                             
                             {route.route_description && (
-                              <Text style={styles.routeDescription}>{route.route_description}</Text>
+                              <Text style={[styles.routeDescription, {
+                                color: isDarkMode ? theme.textSecondary : '#666'
+                              }]}>{route.route_description}</Text>
                             )}
                             
                             <View style={styles.routeScheduleContainer}>
@@ -505,15 +573,21 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
         animationType="slide"
         onRequestClose={() => setShowFullMap(false)}
       >
-        <SafeAreaView style={styles.fullMapContainer}>
-          <View style={styles.fullMapHeader}>
+        <SafeAreaView style={[styles.fullMapContainer, {
+          backgroundColor: isDarkMode ? theme.background : '#fff'
+        }]}>
+          <View style={[styles.fullMapHeader, {
+            borderBottomColor: isDarkMode ? '#444' : '#e0e0e0'
+          }]}>
             <TouchableOpacity 
               style={styles.closeMapButton}
               onPress={() => setShowFullMap(false)}
             >
-              <Ionicons name="close" size={24} color="#333" />
+              <Ionicons name="close" size={24} color={isDarkMode ? theme.text : "#333"} />
             </TouchableOpacity>
-            <Text style={styles.fullMapTitle}>
+            <Text style={[styles.fullMapTitle, {
+              color: isDarkMode ? theme.text : '#333'
+            }]}>
               {selectedRouteForMap?.name || 'Collection Route'}
             </Text>
           </View>
@@ -523,6 +597,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
               coordinates={selectedRouteForMap.route_coordinates}
               routeName={selectedRouteForMap.name}
               collectionDays={selectedRouteForMap.collection_days}
+              isDarkMode={isDarkMode}
             />
           )}
         </SafeAreaView>
@@ -536,19 +611,27 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
         onRequestClose={() => setShowReviewForm(false)}
       >
         <View style={styles.reviewModalContainer}>
-          <View style={styles.reviewModalContent}>
-            <View style={styles.reviewModalHeader}>
-              <Text style={styles.reviewModalTitle}>Rate {agency.name}</Text>
+          <View style={[styles.reviewModalContent, {
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff'
+          }]}>
+            <View style={[styles.reviewModalHeader, {
+              borderBottomColor: isDarkMode ? '#444' : '#f0f0f0'
+            }]}>
+              <Text style={[styles.reviewModalTitle, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Rate {agency.name}</Text>
               <TouchableOpacity 
                 style={styles.closeReviewButton}
                 onPress={() => setShowReviewForm(false)}
               >
-                <Ionicons name="close" size={24} color="#333" />
+                <Ionicons name="close" size={24} color={isDarkMode ? theme.text : "#333"} />
               </TouchableOpacity>
             </View>
             
             <View style={styles.ratingSelector}>
-              <Text style={styles.ratingSelectorLabel}>Your Rating:</Text>
+              <Text style={[styles.ratingSelectorLabel, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Your Rating:</Text>
               <View style={styles.starsContainer}>
                 {[1, 2, 3, 4, 5].map(star => (
                   <TouchableOpacity 
@@ -567,11 +650,14 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
             </View>
             
             <View style={styles.satisfactionSelector}>
-              <Text style={styles.satisfactionLabel}>How satisfied are you?</Text>
+              <Text style={[styles.satisfactionLabel, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>How satisfied are you?</Text>
               <View style={styles.satisfactionOptions}>
                 <TouchableOpacity 
                   style={[
                     styles.satisfactionOption, 
+                    { borderColor: isDarkMode ? '#444' : '#e0e0e0' },
                     satisfaction === 'positive' && styles.selectedSatisfactionPositive
                   ]}
                   onPress={() => setSatisfaction('positive')}
@@ -583,6 +669,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
                   />
                   <Text style={[
                     styles.satisfactionText,
+                    { color: isDarkMode && satisfaction !== 'positive' ? theme.text : undefined },
                     satisfaction === 'positive' && styles.selectedSatisfactionText
                   ]}>
                     Satisfied
@@ -592,6 +679,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
                 <TouchableOpacity 
                   style={[
                     styles.satisfactionOption, 
+                    { borderColor: isDarkMode ? '#444' : '#e0e0e0' },
                     satisfaction === 'neutral' && styles.selectedSatisfactionNeutral
                   ]}
                   onPress={() => setSatisfaction('neutral')}
@@ -603,6 +691,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
                   />
                   <Text style={[
                     styles.satisfactionText,
+                    { color: isDarkMode && satisfaction !== 'neutral' ? theme.text : undefined },
                     satisfaction === 'neutral' && styles.selectedSatisfactionText
                   ]}>
                     Neutral
@@ -612,6 +701,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
                 <TouchableOpacity 
                   style={[
                     styles.satisfactionOption, 
+                    { borderColor: isDarkMode ? '#444' : '#e0e0e0' },
                     satisfaction === 'negative' && styles.selectedSatisfactionNegative
                   ]}
                   onPress={() => setSatisfaction('negative')}
@@ -623,6 +713,7 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
                   />
                   <Text style={[
                     styles.satisfactionText,
+                    { color: isDarkMode && satisfaction !== 'negative' ? theme.text : undefined },
                     satisfaction === 'negative' && styles.selectedSatisfactionText
                   ]}>
                     Dissatisfied
@@ -632,10 +723,17 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
             </View>
             
             <View style={styles.commentContainer}>
-              <Text style={styles.commentLabel}>Your Comments (Optional):</Text>
+              <Text style={[styles.commentLabel, {
+                color: isDarkMode ? theme.text : '#333'
+              }]}>Your Comments (Optional):</Text>
               <TextInput
-                style={styles.commentInput}
+                style={[styles.commentInput, {
+                  borderColor: isDarkMode ? '#444' : '#e0e0e0',
+                  backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : '#fff',
+                  color: isDarkMode ? theme.text : '#333'
+                }]}
                 placeholder="Share your experience with this agency..."
+                placeholderTextColor={isDarkMode ? theme.textSecondary : '#999'}
                 multiline={true}
                 numberOfLines={4}
                 value={comment}
@@ -663,6 +761,8 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
 
 const CollectionAgenciesScreen = ({ navigation, route }) => {
   const { user } = useAuth();
+  const { isDarkMode, theme } = useTheme();
+  
   const [selectedConstituency, setSelectedConstituency] = useState('');
   const [userConstituency, setUserConstituency] = useState('');
   const [constituencyDropdownOpen, setConstituencyDropdownOpen] = useState(false);
@@ -836,9 +936,13 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
   // Render loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeAreaView style={[styles.loadingContainer, {
+        backgroundColor: isDarkMode ? theme.background : '#fff'
+      }]}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={styles.loadingText}>Loading collection agencies...</Text>
+        <Text style={[styles.loadingText, {
+          color: isDarkMode ? theme.textSecondary : '#666'
+        }]}>Loading collection agencies...</Text>
       </SafeAreaView>
     );
   }
@@ -846,9 +950,13 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
   // Render error state
   if (error) {
     return (
-      <SafeAreaView style={styles.errorContainer}>
+      <SafeAreaView style={[styles.errorContainer, {
+        backgroundColor: isDarkMode ? theme.background : '#fff'
+      }]}>
         <MaterialIcons name="error-outline" size={48} color="#FF5252" />
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, {
+          color: isDarkMode ? theme.textSecondary : '#666'
+        }]}>{error}</Text>
         <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -857,54 +965,90 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, {
+      backgroundColor: isDarkMode ? theme.background : '#f5f7fa'
+    }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, {
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderBottomColor: isDarkMode ? '#444' : '#e0e0e0'
+      }]}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <Ionicons name="arrow-back" size={24} color="#333" />
+          <Ionicons name="arrow-back" size={24} color={isDarkMode ? theme.text : "#333"} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Collection Agencies</Text>
+        <Text style={[styles.headerTitle, {
+          color: isDarkMode ? theme.text : '#333'
+        }]}>Collection Agencies</Text>
       </View>
       
       {/* Constituency Selector */}
-      <View style={styles.constituencySelector}>
-        <Text style={styles.constituencyLabel}>Constituency:</Text>
+      <View style={[styles.constituencySelector, {
+        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+        borderBottomColor: isDarkMode ? '#444' : '#e0e0e0'
+      }]}>
+        <Text style={[styles.constituencyLabel, {
+          color: isDarkMode ? theme.text : '#333'
+        }]}>Constituency:</Text>
         <TouchableOpacity 
-          style={styles.constituencyDropdown}
+          style={[styles.constituencyDropdown, {
+            backgroundColor: isDarkMode ? '#333' : '#f0f0f0'
+          }]}
           onPress={() => setConstituencyDropdownOpen(!constituencyDropdownOpen)}
         >
-          <Text style={styles.constituencyText}>
+          <Text style={[styles.constituencyText, {
+            color: isDarkMode ? theme.text : '#333'
+          }]}>
             {selectedConstituency || 'All Constituencies'}
           </Text>
           <Ionicons 
             name={constituencyDropdownOpen ? "chevron-up" : "chevron-down"} 
             size={16} 
-            color="#333" 
+            color={isDarkMode ? theme.text : "#333"} 
           />
         </TouchableOpacity>
       </View>
       
-      {/* Constituency Dropdown Menu */}
+      {/* Constituency Dropdown Menu - Fixed for dark mode */}
       {constituencyDropdownOpen && (
-        <View style={styles.dropdownMenuContainer}>
-          <ScrollView style={styles.dropdownMenu}>
+        <View style={[styles.dropdownMenuContainer]}>
+          <TouchableOpacity 
+            style={[styles.dropdownBackdrop, {
+              backgroundColor: 'rgba(0, 0, 0, 0.9)'
+            }]}
+            activeOpacity={1}
+            onPress={() => setConstituencyDropdownOpen(false)}
+          />
+          <View style={[styles.dropdownMenu, {
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            borderColor: isDarkMode ? '#444' : '#e0e0e0',
+            borderWidth: 1,
+            shadowColor: isDarkMode ? '#000' : '#000',
+            shadowOpacity: isDarkMode ? 0.3 : 0.1,
+            elevation: 5
+          }]}>
             {constituencies.map((constituency, index) => (
               <TouchableOpacity
                 key={index}
                 style={[
                   styles.dropdownItem,
-                  selectedConstituency === constituency && styles.selectedDropdownItem
+                  {
+                    borderBottomColor: isDarkMode ? '#444' : '#f0f0f0',
+                    backgroundColor: selectedConstituency === constituency ? 
+                      (isDarkMode ? '#1a331a' : '#f0fff0') : 
+                      (isDarkMode ? theme.cardBackground : '#fff')
+                  }
                 ]}
                 onPress={() => handleConstituencySelect(constituency)}
               >
                 <Text 
                   style={[
                     styles.dropdownItemText,
-                    selectedConstituency === constituency && styles.selectedDropdownItemText,
-                    constituency === userConstituency && styles.userConstituencyText
+                    { color: isDarkMode ? theme.text : '#333' },
+                    selectedConstituency === constituency && { color: '#4CAF50' },
+                    constituency === userConstituency && { fontWeight: '500' }
                   ]}
                 >
                   {constituency}
@@ -915,7 +1059,7 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
                 )}
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
         </View>
       )}
       
@@ -934,16 +1078,24 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
             />
           )}
           keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.agenciesList}
+          contentContainerStyle={[styles.agenciesList, {
+            backgroundColor: isDarkMode ? theme.background : '#f5f7fa'
+          }]}
           showsVerticalScrollIndicator={false}
           onRefresh={handleRefresh}
           refreshing={isLoading}
         />
       ) : (
-        <View style={styles.noAgenciesContainer}>
-          <MaterialIcons name="search-off" size={64} color="#BDBDBD" />
-          <Text style={styles.noAgenciesText}>No collection agencies found</Text>
-          <Text style={styles.noAgenciesSubText}>
+        <View style={[styles.noAgenciesContainer, {
+          backgroundColor: isDarkMode ? theme.background : '#f5f7fa'
+        }]}>
+          <MaterialIcons name="search-off" size={64} color={isDarkMode ? '#555' : "#BDBDBD"} />
+          <Text style={[styles.noAgenciesText, {
+            color: isDarkMode ? theme.text : '#333'
+          }]}>No collection agencies found</Text>
+          <Text style={[styles.noAgenciesSubText, {
+            color: isDarkMode ? theme.textSecondary : '#666'
+          }]}>
             {selectedConstituency && selectedConstituency !== 'All Constituencies'
               ? `There are no collection agencies in ${selectedConstituency}.`
               : 'There are no collection agencies available at this time.'}
@@ -1017,18 +1169,22 @@ const styles = StyleSheet.create({
     top: 110,
     left: 0,
     right: 0,
+    bottom: 0,
     zIndex: 10,
   },
+  dropdownBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   dropdownMenu: {
-    backgroundColor: '#fff',
     marginHorizontal: 16,
     borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
     maxHeight: 300,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
   },
   dropdownItem: {
     flexDirection: 'row',

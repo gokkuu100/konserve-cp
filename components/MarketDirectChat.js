@@ -19,6 +19,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabase/config/supabaseConfig';
 import MarketChatManager from '../supabase/manager/marketplace/MarketChatManager';
+import { useTheme } from '../ThemeContext';
 import { formatTimeAgo } from '../utils/timeUtils';
 
 const MarketDirectChat = () => {
@@ -26,6 +27,7 @@ const MarketDirectChat = () => {
   const route = useRoute();
   const { buyerId, buyerName, buyerLogo } = route.params;
   const { user } = useAuth();
+  const { isDarkMode, theme } = useTheme();
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -292,33 +294,42 @@ const MarketDirectChat = () => {
         {!isMyMessage && (
           <Image
             source={{ uri: buyerLogo }}
-            style={styles.messageBubbleAvatar}
+            style={[
+              styles.messageBubbleAvatar,
+              { borderColor: isDarkMode ? '#444' : '#f0f0f0' }
+            ]}
           />
         )}
         <View style={[
           styles.messageBubble,
-          isMyMessage ? styles.myMessageBubble : styles.theirMessageBubble,
+          isMyMessage ? 
+            [styles.myMessageBubble, { backgroundColor: theme.primary || '#4CAF50' }] : 
+            [styles.theirMessageBubble, { backgroundColor: isDarkMode ? '#333' : '#fff' }],
           item.is_image && styles.imageBubble,
-          isOptimistic && styles.optimisticBubble // Add style for optimistic messages
+          isOptimistic && styles.optimisticBubble
         ]}>
           {item.is_image ? (
             <TouchableOpacity
               onPress={() => {
-                // You could add a full-screen image viewer here
                 Alert.alert('Image', 'View full image');
               }}
             >
               <Image
                 source={{ uri: item.message }}
-                style={styles.messageImage}
+                style={[
+                  styles.messageImage,
+                  { borderColor: isDarkMode ? '#444' : '#ddd' }
+                ]}
                 resizeMode="cover"
-                loadingIndicatorSource={<ActivityIndicator color="#4CAF50" />}
+                loadingIndicatorSource={<ActivityIndicator color={theme.primary || "#4CAF50"} />}
               />
             </TouchableOpacity>
           ) : (
             <Text style={[
               styles.messageText,
-              isMyMessage ? styles.myMessageText : styles.theirMessageText
+              isMyMessage ? 
+                styles.myMessageText : 
+                [styles.theirMessageText, { color: isDarkMode ? '#fff' : '#333' }]
             ]}>
               {item.message}
             </Text>
@@ -326,7 +337,9 @@ const MarketDirectChat = () => {
           <View style={styles.messageFooter}>
             <Text style={[
               styles.messageTime,
-              isMyMessage ? styles.myMessageTime : styles.theirMessageTime
+              isMyMessage ? 
+                styles.myMessageTime : 
+                [styles.theirMessageTime, { color: isDarkMode ? 'rgba(255, 255, 255, 0.5)' : 'rgba(0, 0, 0, 0.5)' }]
             ]}>
               {isOptimistic ? 'Sending...' : formatTimeAgo(item.created_at)}
             </Text>
@@ -345,7 +358,10 @@ const MarketDirectChat = () => {
 
   // Render the enhanced header with better UI
   const renderHeader = () => (
-    <View style={styles.header}>
+    <View style={[
+      styles.header,
+      { backgroundColor: isDarkMode ? theme.cardBackground : '#fff' }
+    ]}>
       <View style={styles.headerContent}>
         <View style={styles.headerLeft}>
           <TouchableOpacity 
@@ -353,20 +369,29 @@ const MarketDirectChat = () => {
             onPress={() => navigation.goBack()}
             hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}
           >
-            <Ionicons name="chevron-back" size={28} color="#333" />
+            <Ionicons name="chevron-back" size={28} color={isDarkMode ? theme.text : '#333'} />
           </TouchableOpacity>
         </View>
         
         <View style={styles.headerCenter}>
           <Image 
             source={{ uri: buyerLogo || 'https://via.placeholder.com/150' }} 
-            style={styles.headerAvatar} 
+            style={[
+              styles.headerAvatar,
+              { borderColor: isDarkMode ? '#444' : '#f0f0f0' }
+            ]} 
           />
           <View style={styles.headerInfo}>
-            <Text style={styles.headerTitle} numberOfLines={1}>
+            <Text style={[
+              styles.headerTitle,
+              { color: isDarkMode ? theme.text : '#333' }
+            ]} numberOfLines={1}>
               {buyerName || 'Chat'}
             </Text>
-            <Text style={styles.headerSubtitle}>
+            <Text style={[
+              styles.headerSubtitle,
+              { color: isDarkMode ? theme.textSecondary : '#666' }
+            ]}>
               {loading ? 'Loading...' : 
                 (messages.length > 0 ? 
                   `${messages.length} messages` : 'Start a conversation')}
@@ -379,13 +404,19 @@ const MarketDirectChat = () => {
             style={styles.moreButton}
             hitSlop={{top: 15, bottom: 15, left: 15, right: 15}}
           >
-            <Ionicons name="ellipsis-vertical" size={24} color="#4CAF50" />
+            <Ionicons name="ellipsis-vertical" size={24} color={theme.primary || "#4CAF50"} />
           </TouchableOpacity>
         </View>
       </View>
       
-      <View style={styles.headerProgress}>
-        <View style={styles.headerProgressBar}></View>
+      <View style={[
+        styles.headerProgress,
+        { backgroundColor: isDarkMode ? '#222' : '#f0f0f0' }
+      ]}>
+        <View style={[
+          styles.headerProgressBar,
+          { backgroundColor: theme.primary || '#4CAF50' }
+        ]}></View>
       </View>
     </View>
   );
@@ -403,7 +434,10 @@ const MarketDirectChat = () => {
 
   // Main render
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[
+      styles.container,
+      { backgroundColor: isDarkMode ? theme.background : '#f5f5f5' }
+    ]}>
       {renderHeader()}
       
       <KeyboardAvoidingView 
@@ -413,14 +447,23 @@ const MarketDirectChat = () => {
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#4CAF50" />
-            <Text style={styles.loadingText}>Loading conversation...</Text>
+            <ActivityIndicator size="large" color={theme.primary || "#4CAF50"} />
+            <Text style={[
+              styles.loadingText,
+              { color: isDarkMode ? theme.textSecondary : '#666' }
+            ]}>Loading conversation...</Text>
           </View>
         ) : messages.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Ionicons name="chatbubble-ellipses-outline" size={64} color="#DDD" />
-            <Text style={styles.emptyText}>No messages yet</Text>
-            <Text style={styles.emptySubText}>
+            <Ionicons name="chatbubble-ellipses-outline" size={64} color={isDarkMode ? '#444' : '#DDD'} />
+            <Text style={[
+              styles.emptyText,
+              { color: isDarkMode ? theme.text : '#333' }
+            ]}>No messages yet</Text>
+            <Text style={[
+              styles.emptySubText,
+              { color: isDarkMode ? theme.textSecondary : '#666' }
+            ]}>
               Start a conversation with {buyerName}
             </Text>
           </View>
@@ -436,24 +479,37 @@ const MarketDirectChat = () => {
           />
         )}
         
-        <View style={styles.inputContainer}>
+        <View style={[
+          styles.inputContainer,
+          { 
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            borderTopColor: isDarkMode ? '#333' : '#f0f0f0'
+          }
+        ]}>
           <TouchableOpacity 
             style={styles.attachButton}
             onPress={pickAndSendImage}
             disabled={uploading}
           >
             {uploading ? (
-              <ActivityIndicator size="small" color="#4CAF50" />
+              <ActivityIndicator size="small" color={theme.primary || "#4CAF50"} />
             ) : (
-              <Ionicons name="image-outline" size={24} color="#4CAF50" />
+              <Ionicons name="image-outline" size={24} color={theme.primary || "#4CAF50"} />
             )}
           </TouchableOpacity>
           
           <TextInput
-            style={styles.input}
+            style={[
+              styles.input,
+              { 
+                backgroundColor: isDarkMode ? '#222' : '#f0f0f0',
+                color: isDarkMode ? theme.text : '#000'
+              }
+            ]}
             value={inputMessage}
             onChangeText={setInputMessage}
             placeholder="Type a message..."
+            placeholderTextColor={isDarkMode ? '#888' : '#999'}
             multiline
             maxLength={500}
           />
@@ -461,6 +517,7 @@ const MarketDirectChat = () => {
           <TouchableOpacity 
             style={[
               styles.sendButton,
+              { backgroundColor: theme.primary || "#4CAF50" },
               (!inputMessage.trim() || sending) && styles.sendButtonDisabled
             ]}
             onPress={sendMessage}

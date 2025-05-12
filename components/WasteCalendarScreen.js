@@ -23,25 +23,27 @@ import { Calendar } from 'react-native-calendars';
 import { useAuth } from '../contexts/AuthContext';
 import CalendarManager from '../supabase/manager/calendar/CalendarManager';
 import NotificationService from '../supabase/services/NotificationService';
+import { useTheme } from '../ThemeContext';
 
 // ... existing notification setup code ...
 
 const WasteCalendarScreen = ({ navigation }) => {
   const { user } = useAuth();
-  // Define waste management themed colors
+  const { isDarkMode, theme } = useTheme();
+  
+  // Define waste management themed colors with dark mode support
   const colors = {
-    background: '#F7F9F4',
-    card: '#FFFFFF',
-    cardAlt: '#F0F4EA',
-    text: '#2C3E50',
-    secondaryText: '#617487',
-    primary: '#4CAF50',    // Green - representing sustainability
+    background: isDarkMode ? theme.background : '#F7F9F4',
+    card: isDarkMode ? theme.cardBackground : '#FFFFFF',
+    cardAlt: isDarkMode ? '#222' : '#F0F4EA',
+    text: isDarkMode ? theme.text : '#2C3E50',
+    secondaryText: isDarkMode ? theme.textSecondary : '#617487',
+    primary: theme.primary || '#4CAF50',    // Green - representing sustainability
     accent: '#FFA000',     // Amber color for highlighting current date
-    border: '#E0E6D9',
-    error: '#E74C3C',
-    headerBackground: '#3E7D41' // Darker green for header
+    border: isDarkMode ? '#444' : '#E0E6D9',
+    error: isDarkMode ? '#ff6b6b' : '#E74C3C',
+    headerBackground: isDarkMode ? '#1a331a' : '#3E7D41' // Darker green for header
   };
-  const isDark = false;
   
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [memoText, setMemoText] = useState('');
@@ -466,7 +468,10 @@ const WasteCalendarScreen = ({ navigation }) => {
     const formattedDate = moment(memo.date).format('MMM DD, YYYY');
     
     return (
-      <View key={memo.id} style={styles.memoItem}>
+      <View key={memo.id} style={[styles.memoItem, { 
+        backgroundColor: isDarkMode ? theme.cardBackground : 'rgba(255,255,255,0.9)',
+        borderColor: isDarkMode ? '#444' : undefined
+      }]}>
         <View style={styles.memoContent}>
           <Text style={[styles.memoTitle, { color: colors.text }]}>
             {memo.title || 'Reminder'}
@@ -510,7 +515,10 @@ const WasteCalendarScreen = ({ navigation }) => {
             { backgroundColor: colors.background }
           ]}
         >
-          <StatusBar barStyle="light-content" backgroundColor={colors.headerBackground} />
+          <StatusBar 
+            barStyle={isDarkMode ? "light-content" : "light-content"} 
+            backgroundColor={colors.headerBackground} 
+          />
           
           {/* Header */}
           <View style={[styles.header, { backgroundColor: colors.headerBackground }]}>
@@ -525,7 +533,10 @@ const WasteCalendarScreen = ({ navigation }) => {
           </View>
           
           <View style={[styles.container, { backgroundColor: colors.background }]}>
-            <View style={[styles.calendarContainer, { backgroundColor: colors.card }]}>
+            <View style={[styles.calendarContainer, { 
+              backgroundColor: colors.card,
+              shadowColor: isDarkMode ? '#000' : '#000',
+            }]}>
               <Calendar
                 onDayPress={handleDateSelect}
                 markedDates={markedDates}
@@ -542,6 +553,11 @@ const WasteCalendarScreen = ({ navigation }) => {
                   arrowColor: colors.primary,
                   dotColor: colors.primary,
                   todayBackgroundColor: 'transparent',
+                  // Add these for better dark mode support
+                  textMonthFontWeight: 'bold',
+                  textDayHeaderFontWeight: '600',
+                  textDayFontSize: 16,
+                  textMonthFontSize: 16,
                 }}
               />
             </View>
@@ -615,7 +631,9 @@ const WasteCalendarScreen = ({ navigation }) => {
               onRequestClose={() => setModalVisible(false)}
             >
               <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                <View style={styles.modalContainer}>
+                <View style={[styles.modalContainer, {
+                  backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)'
+                }]}>
                   <View style={[styles.modalContent, { backgroundColor: colors.card }]}>
                     <View style={styles.modalHeader}>
                       <Text style={[styles.modalTitle, { color: colors.text }]}>
@@ -629,7 +647,11 @@ const WasteCalendarScreen = ({ navigation }) => {
                     {/* Content wrapped in ScrollView to allow scrolling if keyboard pushes content up */}
                     <ScrollView keyboardShouldPersistTaps="handled">
                       <TextInput
-                        style={[styles.titleInput, { color: colors.text, borderColor: colors.border }]}
+                        style={[styles.titleInput, { 
+                          color: colors.text, 
+                          borderColor: colors.border,
+                          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'transparent'
+                        }]}
                         placeholder="Reminder Title (e.g., Recycling Day)"
                         placeholderTextColor={colors.secondaryText}
                         value={memoTitle}
@@ -637,7 +659,11 @@ const WasteCalendarScreen = ({ navigation }) => {
                       />
                       
                       <TextInput
-                        style={[styles.textInput, { color: colors.text, borderColor: colors.border }]}
+                        style={[styles.textInput, { 
+                          color: colors.text, 
+                          borderColor: colors.border,
+                          backgroundColor: isDarkMode ? 'rgba(255,255,255,0.05)' : 'transparent'
+                        }]}
                         placeholder="Reminder details (e.g., Put out recycling bins)"
                         placeholderTextColor={colors.secondaryText}
                         multiline={true}
@@ -682,8 +708,12 @@ const WasteCalendarScreen = ({ navigation }) => {
                     
                     {/* Time Picker remains outside the ScrollView but inside the modal */}
                     {Platform.OS === 'ios' && showTimePicker && (
-                      <View style={styles.iosTimePickerContainer}>
-                        <View style={styles.iosTimePickerHeader}>
+                      <View style={[styles.iosTimePickerContainer, {
+                        backgroundColor: isDarkMode ? '#333' : 'white'
+                      }]}>
+                        <View style={[styles.iosTimePickerHeader, {
+                          borderBottomColor: isDarkMode ? '#444' : '#EEE'
+                        }]}>
                           <TouchableOpacity onPress={() => setShowTimePicker(false)}>
                             <Text style={{ color: colors.error }}>Cancel</Text>
                           </TouchableOpacity>
@@ -697,7 +727,8 @@ const WasteCalendarScreen = ({ navigation }) => {
                           display="spinner"
                           onChange={onTimeChange}
                           style={styles.iosTimePicker}
-                          textColor={colors.text}
+                          textColor={isDarkMode ? '#fff' : '#000'}
+                          themeVariant={isDarkMode ? "dark" : "light"}
                         />
                       </View>
                     )}
@@ -710,6 +741,7 @@ const WasteCalendarScreen = ({ navigation }) => {
                         is24Hour={false}
                         display="default"
                         onChange={onTimeChange}
+                        themeVariant={isDarkMode ? "dark" : "light"}
                       />
                     )}
                   </View>
@@ -813,7 +845,6 @@ const styles = StyleSheet.create({
   },
   memoItem: {
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 8,
     padding: 16,
     marginBottom: 10,
@@ -822,6 +853,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 1,
     elevation: 1,
+    borderWidth: 0.5, // Add subtle border for dark mode
   },
   memoContent: {
     flex: 1,

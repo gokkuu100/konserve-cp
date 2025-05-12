@@ -74,14 +74,14 @@ const Services = ({ navigation }) => {
         <Text style={[styles.sectionTitle, { color: theme.text }]}>Manage Waste Collection</Text>
         <View style={styles.serviceOptionsContainer}>
           <ServiceOption 
-            title="Collection Agencies"
-            imageSource={require('../assets/location.png')}
-            onPress={() => navigation.navigate('CollectionAgencies')}
+            title="Collection Services"
+            imageSource={require('../assets/building.png')}
+            onPress={() => navigation.navigate('CollectionTypeSelection')}
           />
           <ServiceOption 
-            title="Messages"
-            imageSource={require('../assets/email.png')}
-            onPress={() => navigation.navigate('Messages')}
+            title="Marketplace"
+            imageSource={require('../assets/recycling.png')}
+            onPress={() => navigation.navigate('MarketPlace')}
           />
         </View>
         <View style={[styles.divider, { backgroundColor: theme.border }]} />
@@ -102,13 +102,13 @@ const Services = ({ navigation }) => {
         <View style={styles.serviceOptionsContainer}>
           <ServiceOption 
             title="Submit Feedback"
-            imageSource={require('../assets/feedback.png')}
+            imageSource={require('../assets/feedbackreview.png')}
             onPress={() => navigation.navigate('AgencyFeedback')}
           />
           <ServiceOption 
-            title="Service Reports"
-            imageSource={require('../assets/report.png')}
-            onPress={() => navigation.navigate('MarketPlace')}
+            title="Messages"
+            imageSource={require('../assets/messages.png')}
+            onPress={() => navigation.navigate('Messages')}
           />
         </View>
         <View style={styles.bottomPadding} />

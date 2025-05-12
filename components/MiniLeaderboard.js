@@ -3,10 +3,16 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
 import LeaderboardManager from '../supabase/manager/rewards/LeaderboardManager';
+import { useTheme } from '../ThemeContext';
 
 const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=4CAF50&color=fff&name=User';
 
-const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
+const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: propIsDarkMode }) => {
+  const themeContext = useTheme();
+  // Use provided theme props or fall back to context
+  const theme = propTheme || themeContext.theme;
+  const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : themeContext.isDarkMode;
+  
   const { user, userId, isAuthenticated, loading: authLoading } = useAuth();
   const [leaderboardData, setLeaderboardData] = useState([]);
   const [userRank, setUserRank] = useState(null);
@@ -140,14 +146,23 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
       } else {
         return (
           <View style={styles.rankContainer}>
-            <Text style={styles.rankText}>{item.rank || index + 1}</Text>
+            <Text style={[styles.rankText, { color: theme.text }]}>{item.rank || index + 1}</Text>
           </View>
         );
       }
     };
     
     return (
-      <View key={item.user_id} style={[styles.leaderboardItem, isCurrentUser && styles.highlightedItem]}>
+      <View 
+        key={item.user_id} 
+        style={[
+          styles.leaderboardItem, 
+          isCurrentUser && [
+            styles.highlightedItem, 
+            { backgroundColor: isDarkMode ? '#2c3e2c' : '#E8F5E9' }
+          ]
+        ]}
+      >
         {renderRankIndicator(item.rank)}
         
         <Image 
@@ -155,14 +170,24 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
           style={styles.avatar} 
         />
         
-        <Text style={styles.nameText} numberOfLines={1}>
+        <Text 
+          style={[
+            styles.nameText, 
+            { color: theme.text },
+            isCurrentUser && { fontWeight: '600' }
+          ]} 
+          numberOfLines={1}
+        >
           {item.full_name || 'User'} {isCurrentUser && '(You)'}
         </Text>
         
-        <Text style={styles.pointsText}>{item.total_points || 0} pts</Text>
+        <Text style={[styles.pointsText, { 
+          color: isDarkMode ? '#6abf69' : theme.primary 
+        }]}>{item.total_points || 0} pts</Text>
       </View>
     );
   };
+
 
   // New UI for when user is not in leaderboard yet
   const renderUserNotRankedMessage = () => (
@@ -177,14 +202,19 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
     </View>
   );
 
+
   if (loading) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { 
+        backgroundColor: isDarkMode ? '#1a1a1a' : '#f5f5f5',
+        borderColor: isDarkMode ? '#333' : 'transparent',
+        borderWidth: isDarkMode ? 1 : 0
+      }]}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Leaderboard</Text>
+          <Text style={[styles.headerText, { color: theme.text }]}>Leaderboard</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="small" color="#4CAF50" />
+          <ActivityIndicator size="small" color={isDarkMode ? '#6abf69' : theme.primary} />
         </View>
       </View>
     );
@@ -192,16 +222,25 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
 
   if (error) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { 
+        backgroundColor: isDarkMode ? '#1a1a1a' : '#f5f5f5',
+        borderColor: isDarkMode ? '#333' : 'transparent',
+        borderWidth: isDarkMode ? 1 : 0
+      }]}>
         <View style={styles.headerContainer}>
-          <Text style={styles.headerText}>Leaderboard</Text>
+          <Text style={[styles.headerText, { color: theme.text }]}>Leaderboard</Text>
         </View>
         <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={[styles.errorText, { color: theme.error }]}>{error}</Text>
           {error === 'User not authenticated' ? (
-            <Text style={styles.errorSubText}>Please log in to view the leaderboard</Text>
+            <Text style={[styles.errorSubText, { color: theme.textSecondary }]}>
+              Please log in to view the leaderboard
+            </Text>
           ) : (
-            <TouchableOpacity style={styles.retryButton} onPress={() => fetchLeaderboardData(userId)}>
+            <TouchableOpacity 
+              style={[styles.retryButton, { backgroundColor: isDarkMode ? '#2c5c2c' : theme.primary }]} 
+              onPress={() => fetchLeaderboardData(userId)}
+            >
               <Text style={styles.retryText}>Retry</Text>
             </TouchableOpacity>
           )}
@@ -211,11 +250,16 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { 
+      backgroundColor: isDarkMode ? '#1a1a1a' : '#f5f5f5',
+      shadowColor: isDarkMode ? '#000' : '#000',
+      borderColor: isDarkMode ? '#333' : 'transparent',
+      borderWidth: isDarkMode ? 1 : 0
+    }]}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Leaderboard</Text>
+        <Text style={[styles.headerText, { color: theme.text }]}>Leaderboard</Text>
         <TouchableOpacity onPress={handleViewFullLeaderboard}>
-          <Text style={styles.viewAllText}>View All</Text>
+          <Text style={[styles.viewAllText, { color: isDarkMode ? '#6abf69' : theme.primary }]}>View All</Text>
         </TouchableOpacity>
       </View>
       
@@ -225,18 +269,43 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
         </View>
       ) : (
         <View style={styles.emptyContainer}>
-          <MaterialCommunityIcons name="trophy-outline" size={36} color="#ccc" />
-          <Text style={styles.emptyText}>No leaderboard data available</Text>
+          <MaterialCommunityIcons 
+            name="trophy-outline" 
+            size={36} 
+            color={isDarkMode ? '#555' : '#ccc'} 
+          />
+          <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+            No leaderboard data available
+          </Text>
         </View>
       )}
       
       {/* Show this when user is not yet in leaderboard */}
-      {userNotRanked && renderUserNotRankedMessage()}
+      {userNotRanked && (
+        <View style={[styles.notRankedContainer, {
+          backgroundColor: isDarkMode ? '#3e3e26' : '#FFF9C4',
+          borderLeftColor: isDarkMode ? '#b39f00' : '#FFC107'
+        }]}>
+          <MaterialCommunityIcons 
+            name="trophy-outline" 
+            size={24} 
+            color={isDarkMode ? '#e6c700' : '#FFC107'} 
+          />
+          <Text style={[styles.notRankedText, { color: theme.text }]}>
+            You're not on the leaderboard yet
+          </Text>
+          <Text style={[styles.notRankedInstructions, { color: theme.textSecondary }]}>
+            Redeem your first code to join the rankings!
+          </Text>
+        </View>
+      )}
       
       {/* Only show this section when user is in leaderboard but not visible in top section */}
       {userRank && !displayUsers.some(user => user.user_id === userId) && !userNotRanked && (
-        <View style={styles.currentUserContainer}>
-          <Text style={styles.yourRankLabel}>Your Rank</Text>
+        <View style={[styles.currentUserContainer, { 
+          borderTopColor: isDarkMode ? '#333' : '#e0e0e0' 
+        }]}>
+          <Text style={[styles.yourRankLabel, { color: theme.textSecondary }]}>Your Rank</Text>
           {renderLeaderboardItem(userRank, -1)}
         </View>
       )}
@@ -246,12 +315,10 @@ const MiniLeaderboard = ({ onViewFullLeaderboard }) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#f5f5f5',
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 16,
     marginVertical: 8,
-    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
@@ -266,11 +333,9 @@ const styles = StyleSheet.create({
   headerText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333',
   },
   viewAllText: {
     fontSize: 14,
-    color: '#4CAF50',
   },
   leaderboardContainer: {
     marginBottom: 8,
@@ -294,7 +359,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
-    color: '#333',
   },
   avatar: {
     width: 36,
@@ -306,13 +370,11 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
     marginLeft: 4,
   },
   pointsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#4CAF50',
   },
   loadingContainer: {
     padding: 24,
@@ -326,20 +388,17 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#F44336',
     marginBottom: 8,
     textAlign: 'center',
   },
   errorSubText: {
     fontSize: 12,
-    color: '#757575',
     textAlign: 'center',
   },
   retryButton: {
     marginTop: 8,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#4CAF50',
     borderRadius: 4,
   },
   retryText: {
@@ -354,20 +413,17 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#757575',
     marginTop: 8,
     textAlign: 'center',
   },
   currentUserContainer: {
     marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
     paddingTop: 16,
   },
   yourRankLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#757575',
     marginBottom: 8,
   },
   medalContainer: {
@@ -378,21 +434,17 @@ const styles = StyleSheet.create({
   notRankedContainer: {
     marginTop: 16,
     padding: 12,
-    backgroundColor: '#FFF9C4',
     borderRadius: 8,
     alignItems: 'center',
     borderLeftWidth: 4,
-    borderLeftColor: '#FFC107',
   },
   notRankedText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333',
     marginTop: 8,
   },
   notRankedInstructions: {
     fontSize: 12,
-    color: '#666',
     textAlign: 'center',
     marginTop: 4,
   },

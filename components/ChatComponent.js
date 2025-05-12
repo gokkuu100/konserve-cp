@@ -727,10 +727,6 @@ const ChatComponent = () => {
               backgroundColor: isDarkMode ? '#1f1f1f' : theme.surface,
               borderTopColor: theme.border
             }]}>
-              <TouchableOpacity style={styles.attachButton}>
-                <Text style={[styles.attachIcon, { color: theme.textSecondary }]}>📎</Text>
-              </TouchableOpacity>
-              
               <TextInput
                 style={[styles.textInput, { 
                   backgroundColor: isDarkMode ? '#333333' : theme.background,
