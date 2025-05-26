@@ -117,7 +117,7 @@ function MainTabNavigator() {
       if (userId && userConstituency) {
         checkUnreadMessages();
       }
-    }, 60000); // Check every minute
+    }, 60000); 
     
     // Add listener for when messages are read
     const messageReadListener = () => {
@@ -271,7 +271,6 @@ const BusinessSubscriptionPlanScreen = ({ navigation, route }) => {
   );
 };
 
-// Main App component
 const App = () => {
   const [appIsReady, setAppIsReady] = useState(false);
   const navigationRef = useRef(null);
@@ -326,8 +325,8 @@ const App = () => {
     config: {
       screens: {
         PaymentScreen: 'payment',
-        PaymentSuccess: 'payment/success', // Handle Paystack success redirect
-        PaymentCancel: 'payment/cancel',   // Handle Paystack cancel redirect
+        PaymentSuccess: 'payment/success', 
+        PaymentCancel: 'payment/cancel',   
         Login: 'login',
         Register: 'register',
         ProfileCompletion: 'profile-completion',
@@ -345,18 +344,15 @@ const App = () => {
     },
     // Add a custom getInitialURL to handle special cases
     getInitialURL: async () => {
-      // First check if the app was opened via a deep link
       const url = await Linking.getInitialURL();
       
       if (url) {
         return url;
       }
       
-      // If no deep link, check if we have an active auth session
       try {
         const { data } = await supabase.auth.getSession();
         if (data?.session) {
-          // Store in globals for components to access
           global.authSession = data.session;
           global.authUser = data.session.user;
           global.authSucceeded = true;
@@ -369,7 +365,7 @@ const App = () => {
     },
   };
 
-  // Add this useEffect to handle notification responses when app is in the background
+
   useEffect(() => {
     const backgroundSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
@@ -380,8 +376,6 @@ const App = () => {
         
         // If this is a message notification, refresh the messages list
         if (data.screen === 'Messages' || data.screen === 'OrgMessages') {
-          // This could trigger a global event to refresh messages
-          // For simplicity, you can use a global variable or context
           if (global.refreshMessages) {
             global.refreshMessages();
           }
@@ -425,10 +419,8 @@ const AppContent = ({ navigationRef, linking }) => {
       try {
         console.log('Initializing notifications...');
         
-        // Configure how your app should handle received notifications
         Notifications.setNotificationHandler({
           handleNotification: async () => {
-            // Get user notification preferences
             const settingsString = await AsyncStorage.getItem('userSettings');
             const settings = settingsString ? JSON.parse(settingsString) : { notifications: true, sound: true };
             
@@ -492,9 +484,7 @@ const AppContent = ({ navigationRef, linking }) => {
       const data = response.notification.request.content.data;
       
       if (data?.screen && navigationRef.current) {
-        // Mark messages as read if applicable
         if (data.screen === 'Messages' && data.messageId) {
-          // Create a function to mark agency messages as read
           const markAgencyMessageRead = async (messageId) => {
             const { data: message, error } = await supabase
               .from(data.messageType === 'direct' ? 'agency_messages_direct' : 'agency_messages_general')
@@ -509,7 +499,7 @@ const AppContent = ({ navigationRef, linking }) => {
           
           markAgencyMessageRead(data.messageId);
         } else if (data.screen === 'OrgMessages' && data.messageId) {
-          // Create a function to mark organization messages as read
+        
           const markOrgMessageRead = async (messageId) => {
             const { data: message, error } = await supabase
               .from(data.messageType === 'direct' ? 'organization_directmessages' : 'organization_generalreport')
@@ -549,7 +539,6 @@ const AppContent = ({ navigationRef, linking }) => {
       constituencyChangeSubscription = ConstituencyManager.listenForApprovedRequests(
         userId,
         (newConstituency) => {
-          // You could show a notification here
           Alert.alert(
             'Constituency Updated',
             `Your constituency has been updated to ${newConstituency}!`

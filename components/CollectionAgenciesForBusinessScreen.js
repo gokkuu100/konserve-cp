@@ -1,17 +1,18 @@
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
+import AgencyBusinessManager from '../supabase/manager/agency/AgencyBusinessManager';
 import {
-    ActivityIndicator,
-    Animated,
-    FlatList,
-    Image,
-    Modal,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
-    ScrollView
+  ActivityIndicator,
+  Animated,
+  FlatList,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from 'react-native';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import { useAuth } from '../contexts/AuthContext';
@@ -787,9 +788,9 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
   const [userConstituency, setUserConstituency] = useState('');
   const [constituencyDropdownOpen, setConstituencyDropdownOpen] = useState(false);
   const [expandedCardId, setExpandedCardId] = useState(null);
-  const [agencies, setAgencies] = useState(MOCK_BUSINESS_AGENCIES);
+  const [agencies, setAgencies] = useState([]);
   const [filteredAgencies, setFilteredAgencies] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start with loading state
   const [error, setError] = useState(null);
   const [constituencies, setConstituencies] = useState([]);
   const [minCapacity, setMinCapacity] = useState(null);
@@ -805,43 +806,58 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
 
   // Load user profile and agencies on component mount
   useEffect(() => {
-    setIsLoading(true);
-    try {
-      // Extract unique constituencies from agencies
-      const uniqueConstituencies = [...new Set(
-        agencies
-          .map(agency => agency.constituency)
-          .filter(Boolean)
-      )];
-      
-      setConstituencies(['All Constituencies', ...uniqueConstituencies]);
-      
-      // Extract all available business types
-      const allBusinessTypes = new Set();
-      agencies.forEach(agency => {
-        if (agency.business_types && Array.isArray(agency.business_types)) {
-          agency.business_types.forEach(type => allBusinessTypes.add(type));
+    const fetchAgencies = async () => {
+      setIsLoading(true);
+      try {
+        // Fetch agencies from Supabase using AgencyBusinessManager
+        const fetchedAgencies = await AgencyBusinessManager.getBusinessAgenciesDetails();
+        
+        if (fetchedAgencies && fetchedAgencies.length > 0) {
+          setAgencies(fetchedAgencies);
+          
+          // Extract unique constituencies from agencies
+          const uniqueConstituencies = [...new Set(
+            fetchedAgencies
+              .map(agency => agency.constituency)
+              .filter(Boolean)
+          )];
+          
+          setConstituencies(['All Constituencies', ...uniqueConstituencies]);
+          
+          // Extract all available business types
+          const allBusinessTypes = new Set();
+          fetchedAgencies.forEach(agency => {
+            if (agency.business_types && Array.isArray(agency.business_types)) {
+              agency.business_types.forEach(type => allBusinessTypes.add(type));
+            }
+          });
+          setAvailableBusinessTypes(Array.from(allBusinessTypes));
+          
+          // Extract all available certifications
+          const allCertifications = new Set();
+          fetchedAgencies.forEach(agency => {
+            if (agency.certifications && Array.isArray(agency.certifications)) {
+              agency.certifications.forEach(cert => allCertifications.add(cert));
+            }
+          });
+          setAvailableCertifications(Array.from(allCertifications));
+          
+          // Set filtered agencies based on selected constituency
+          setFilteredAgencies(fetchedAgencies);
+        } else {
+          console.warn('No business agencies found');
+          setAgencies([]);
+          setFilteredAgencies([]);
         }
-      });
-      setAvailableBusinessTypes(Array.from(allBusinessTypes));
-      
-      // Extract all available certifications
-      const allCertifications = new Set();
-      agencies.forEach(agency => {
-        if (agency.certifications && Array.isArray(agency.certifications)) {
-          agency.certifications.forEach(cert => allCertifications.add(cert));
-        }
-      });
-      setAvailableCertifications(Array.from(allCertifications));
-      
-      // Set filtered agencies based on selected constituency
-      filterAgencies();
-    } catch (error) {
-      console.error('Error initializing data:', error);
-      setError('Failed to load business collection agencies. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
+      } catch (error) {
+        console.error('Error fetching business agencies:', error);
+        setError('Failed to load business collection agencies. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchAgencies();
   }, []);
   
   // Filter agencies when filters change

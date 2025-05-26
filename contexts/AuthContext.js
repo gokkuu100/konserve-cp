@@ -2,8 +2,6 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../supabase/config/supabaseConfig';
 import AuthManager from '../supabase/manager/auth/AuthManager';
 
-// AuthManager is already instantiated as a singleton in its module
-// No need to create a new instance with 'new'
 
 export const AuthContext = createContext({
   user: null,
@@ -92,7 +90,7 @@ export const AuthProvider = ({ children }) => {
         setSession(session);
         setIsAuthenticated(true);
         
-        // Persist the session (not needed with autoRefreshToken, but good to be explicit)
+        
         return { success: true };
       } else {
         throw new Error('No session returned from authentication');
