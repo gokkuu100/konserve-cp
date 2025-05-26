@@ -37,7 +37,7 @@ yarn-error.*
 *.tsbuildinfo
 
 app-example
-.env
+env
 upabase/
 omponents/Subscriptions.js
 omponents/SubscriptionPlanScreen.js
