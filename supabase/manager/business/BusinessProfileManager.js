@@ -11,7 +11,7 @@ class BusinessProfileManager {
     try {
       // Start a transaction by using a single batch call
       const { data: profile, error: profileError } = await supabase
-        .from('business_profiles')
+        .from('user_business_profiles')
         .insert({
           user_id: profileData.userId,
           business_name: profileData.businessName,
@@ -35,7 +35,7 @@ class BusinessProfileManager {
 
       // Create waste details for the profile
       const { data: wasteDetails, error: wasteError } = await supabase
-        .from('business_waste_details')
+        .from('user_business_waste_details')
         .insert({
           business_profile_id: profile.id,
           waste_generated_kg_per_week: wasteData.wasteGeneratedKgPerWeek,
@@ -72,7 +72,7 @@ class BusinessProfileManager {
   async getBusinessProfilesByUserId(userId) {
     try {
       const { data: profiles, error: profilesError } = await supabase
-        .from('business_profiles')
+        .from('user_business_profiles')
         .select('*')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
@@ -86,7 +86,7 @@ class BusinessProfileManager {
       const profilesWithWasteDetails = await Promise.all(
         profiles.map(async (profile) => {
           const { data: wasteDetails, error: wasteError } = await supabase
-            .from('business_waste_details')
+            .from('user_business_waste_details')
             .select('*')
             .eq('business_profile_id', profile.id)
             .single();
@@ -117,7 +117,7 @@ class BusinessProfileManager {
   async getBusinessProfileById(profileId) {
     try {
       const { data: profile, error: profileError } = await supabase
-        .from('business_profiles')
+        .from('user_business_profiles')
         .select('*')
         .eq('id', profileId)
         .single();
@@ -128,7 +128,7 @@ class BusinessProfileManager {
       }
 
       const { data: wasteDetails, error: wasteError } = await supabase
-        .from('business_waste_details')
+        .from('user_business_waste_details')
         .select('*')
         .eq('business_profile_id', profileId)
         .single();
@@ -156,7 +156,7 @@ class BusinessProfileManager {
   async updateBusinessProfile(profileId, profileData) {
     try {
       const { data, error } = await supabase
-        .from('business_profiles')
+        .from('user_business_profiles')
         .update({
           business_name: profileData.businessName,
           business_type: profileData.businessType,
@@ -195,7 +195,7 @@ class BusinessProfileManager {
   async updateWasteDetails(wasteDetailsId, wasteData) {
     try {
       const { data, error } = await supabase
-        .from('business_waste_details')
+        .from('user_business_waste_details')
         .update({
           waste_generated_kg_per_week: wasteData.wasteGeneratedKgPerWeek,
           waste_types: wasteData.wasteTypes,
@@ -231,7 +231,7 @@ class BusinessProfileManager {
     try {
       // Delete waste details first (due to foreign key constraint)
       const { error: wasteError } = await supabase
-        .from('business_waste_details')
+        .from('user_business_waste_details')
         .delete()
         .eq('business_profile_id', profileId);
 
@@ -242,7 +242,7 @@ class BusinessProfileManager {
 
       // Then delete the profile
       const { error: profileError } = await supabase
-        .from('business_profiles')
+        .from('user_business_profiles')
         .delete()
         .eq('id', profileId);
 

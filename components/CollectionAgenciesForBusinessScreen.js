@@ -1,6 +1,7 @@
 import { FontAwesome, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import React, { useEffect, useRef, useState } from 'react';
 import AgencyBusinessManager from '../supabase/manager/agency/AgencyBusinessManager';
+import BusinessProfileManager from '../supabase/manager/business/BusinessProfileManager';
 import {
   ActivityIndicator,
   Animated,
@@ -790,7 +791,8 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
   const [expandedCardId, setExpandedCardId] = useState(null);
   const [agencies, setAgencies] = useState([]);
   const [filteredAgencies, setFilteredAgencies] = useState([]);
-  const [isLoading, setIsLoading] = useState(true); // Start with loading state
+  const [isLoading, setIsLoading] = useState(false);
+  const [isCheckingProfiles, setIsCheckingProfiles] = useState(true); // Start with loading state
   const [error, setError] = useState(null);
   const [constituencies, setConstituencies] = useState([]);
   const [minCapacity, setMinCapacity] = useState(null);
@@ -804,11 +806,31 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
   const [availableCertifications, setAvailableCertifications] = useState([]);
   const agencyCardRefs = useRef({});
 
-  // Load user profile and agencies on component mount
+  // Check if user has business profiles and load agencies
   useEffect(() => {
-    const fetchAgencies = async () => {
-      setIsLoading(true);
+    const checkBusinessProfilesAndLoadAgencies = async () => {
+      if (!user) return;
+      
+      setIsCheckingProfiles(true);
       try {
+        // Check if user has any business profiles
+        const userProfiles = await BusinessProfileManager.getBusinessProfilesByUserId(user.id);
+        
+        if (!userProfiles || userProfiles.length === 0) {
+          // No business profiles found, redirect to creation screen
+          navigation.replace('BusinessProfileCreationScreen');
+          return;
+        }
+        
+        // User has profiles, check if a specific profile was selected
+        const { businessProfileId } = route.params || {};
+        
+        if (!businessProfileId && userProfiles.length > 0) {
+          // No specific profile selected, show the profiles list
+          navigation.replace('BusinessProfilesScreen');
+          return;
+        }
+        
         // Fetch agencies from Supabase using AgencyBusinessManager
         const fetchedAgencies = await AgencyBusinessManager.getBusinessAgenciesDetails();
         
@@ -850,15 +872,16 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
           setFilteredAgencies([]);
         }
       } catch (error) {
-        console.error('Error fetching business agencies:', error);
+        console.error('Error in business profiles or agencies:', error);
         setError('Failed to load business collection agencies. Please try again.');
       } finally {
         setIsLoading(false);
+        setIsCheckingProfiles(false);
       }
     };
     
-    fetchAgencies();
-  }, []);
+    checkBusinessProfilesAndLoadAgencies();
+  }, [navigation, route.params, user]);
   
   // Filter agencies when filters change
   useEffect(() => {
@@ -970,17 +993,27 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     });
   };
 
-  // Render loading state
+  // Render checking profiles loading state
+  if (isCheckingProfiles) {
+    return (
+      <View style={[styles.loadingContainer, { backgroundColor: isDarkMode ? theme.background : '#fff' }]}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={[styles.loadingText, { color: isDarkMode ? theme.text : '#333' }]}>
+          Checking business profiles...
+        </Text>
+      </View>
+    );
+  }
+  
+  // Render agencies loading state
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.loadingContainer, {
-        backgroundColor: isDarkMode ? theme.background : '#fff'
-      }]}>
+      <View style={[styles.loadingContainer, { backgroundColor: isDarkMode ? theme.background : '#fff' }]}>
         <ActivityIndicator size="large" color="#4CAF50" />
-        <Text style={[styles.loadingText, {
-          color: isDarkMode ? theme.textSecondary : '#666'
-        }]}>Loading business collection agencies...</Text>
-      </SafeAreaView>
+        <Text style={[styles.loadingText, { color: isDarkMode ? theme.text : '#333' }]}>
+          Loading collection agencies...
+        </Text>
+      </View>
     );
   }
   
@@ -1351,6 +1384,17 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    textAlign: 'center'
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f7fa',

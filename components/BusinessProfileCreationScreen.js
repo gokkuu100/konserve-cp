@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity, 
-  StyleSheet, ActivityIndicator, Alert, Switch, Platform
+  StyleSheet, ActivityIndicator, Alert, Switch, Platform,
+  KeyboardAvoidingView, Dimensions, StatusBar, SafeAreaView,
+  Keyboard, TouchableWithoutFeedback
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import { Modal, FlatList } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../ThemeContext';
+import { useFocusEffect } from '@react-navigation/native';
 import BusinessProfileManager from '../supabase/manager/business/BusinessProfileManager';
 
 const BusinessProfileCreationScreen = ({ navigation, route }) => {
@@ -14,6 +17,7 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
   const { isDarkMode, theme } = useTheme();
   const [loading, setLoading] = useState(false);
   const [businessTypes, setBusinessTypes] = useState([]);
+  const [showBusinessTypeModal, setShowBusinessTypeModal] = useState(false);
   const [step, setStep] = useState(1); // 1 = Business Details, 2 = Waste Details
   
   // Business Profile Form State
@@ -34,7 +38,7 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
   const [currentDisposalMethod, setCurrentDisposalMethod] = useState('');
   const [sortingCapability, setSortingCapability] = useState(false);
   const [recyclingInterest, setRecyclingInterest] = useState(false);
-  const [collectionFrequencyPreference, setCollectionFrequencyPreference] = useState('weekly');
+  const [collectionFrequency, setCollectionFrequency] = useState('');
   const [specialRequirements, setSpecialRequirements] = useState('');
   
   // Available waste types
@@ -44,13 +48,16 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
   ];
   
   // Collection frequency options
-  const frequencyOptions = [
-    { label: 'Daily', value: 'daily' },
-    { label: 'Twice a week', value: 'twice_weekly' },
-    { label: 'Weekly', value: 'weekly' },
-    { label: 'Bi-weekly', value: 'bi_weekly' },
-    { label: 'Monthly', value: 'monthly' }
-  ];
+  const [collectionFrequencyOptions] = useState([
+    { label: 'Select frequency', value: '' },
+    { label: 'Daily', value: 'Daily' },
+    { label: 'Weekly', value: 'Weekly' },
+    { label: 'Bi-weekly', value: 'Bi-weekly' },
+    { label: 'Monthly', value: 'Monthly' },
+    { label: 'On-demand', value: 'On-demand' }
+  ]);
+  
+  const [showFrequencyModal, setShowFrequencyModal] = useState(false);
   
   useEffect(() => {
     const loadBusinessTypes = async () => {
@@ -98,7 +105,7 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
       return 'At least one waste type must be selected';
     if (!currentDisposalMethod.trim()) 
       return 'Current disposal method is required';
-    if (!collectionFrequencyPreference) 
+    if (!collectionFrequency) 
       return 'Collection frequency preference is required';
     
     return null;
@@ -148,19 +155,23 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
         currentDisposalMethod,
         sortingCapability,
         recyclingInterest,
-        collectionFrequencyPreference,
+        collectionFrequency,
         specialRequirements
       };
       
-      await BusinessProfileManager.createBusinessProfile(profileData, wasteData);
+      const newProfile = await BusinessProfileManager.createBusinessProfile(profileData, wasteData);
       
       Alert.alert(
         'Success',
         'Business profile created successfully',
         [
           { 
-            text: 'OK', 
-            onPress: () => navigation.navigate('BusinessProfilesScreen') 
+            text: 'View Agencies', 
+            onPress: () => navigation.replace('CollectionAgenciesForBusinessScreen', { businessProfileId: newProfile.id }) 
+          },
+          {
+            text: 'View All Profiles',
+            onPress: () => navigation.replace('BusinessProfilesScreen')
           }
         ]
       );
@@ -173,80 +184,102 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
   };
   
   const renderBusinessDetailsForm = () => (
-    <ScrollView style={styles.formContainer}>
-      <Text style={[styles.formTitle, { color: isDarkMode ? theme.text : '#333' }]}>
-        Business Details
-      </Text>
-      
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-          Business Name *
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <ScrollView style={styles.formContainer} keyboardShouldPersistTaps="handled">
+        <Text style={[styles.formTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+          Business Details
         </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            { 
-              backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-              color: isDarkMode ? theme.text : '#333',
-              borderColor: isDarkMode ? '#444' : '#e0e0e0'
-            }
-          ]}
-          value={businessName}
-          onChangeText={setBusinessName}
-          placeholder="Enter business name"
-          placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-        />
-      </View>
-      
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-          Business Type *
-        </Text>
-        <View style={[
-          styles.pickerContainer,
-          { 
-            backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-            borderColor: isDarkMode ? '#444' : '#e0e0e0'
-          }
-        ]}>
-          <Picker
-            selectedValue={businessType}
-            onValueChange={(itemValue) => setBusinessType(itemValue)}
-            style={[styles.picker, { color: isDarkMode ? theme.text : '#333' }]}
-            dropdownIconColor={isDarkMode ? theme.text : '#333'}
+        
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            Business Name *
+          </Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              { 
+                backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                color: isDarkMode ? theme.text : '#333',
+                borderColor: isDarkMode ? '#444' : '#e0e0e0'
+              }
+            ]}
+            value={businessName}
+            onChangeText={setBusinessName}
+            placeholder="Enter business name"
+            placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
+          />
+        </View>
+        
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            Business Type *
+          </Text>
+          <TouchableOpacity 
+            style={[styles.pickerButton, { 
+              backgroundColor: isDarkMode ? theme.inputBackground : '#f5f5f5',
+              borderColor: isDarkMode ? theme.border : '#e0e0e0'
+            }]}
+            onPress={() => setShowBusinessTypeModal(true)}
           >
-            {businessTypes.map((type) => (
-              <Picker.Item key={type.id} label={type.type_name} value={type.type_name} />
-            ))}
-          </Picker>
+            <Text style={[styles.pickerButtonText, { 
+              color: businessType ? (isDarkMode ? theme.text : '#333') : (isDarkMode ? theme.textSecondary : '#999')
+            }]}>
+              {businessType || 'Select business type'}
+            </Text>
+            <MaterialIcons name="arrow-drop-down" size={24} color={isDarkMode ? theme.text : '#666'} />
+          </TouchableOpacity>
         </View>
-      </View>
-      
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-          Business Address *
-        </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            { 
-              backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-              color: isDarkMode ? theme.text : '#333',
-              borderColor: isDarkMode ? '#444' : '#e0e0e0'
-            }
-          ]}
-          value={businessAddress}
-          onChangeText={setBusinessAddress}
-          placeholder="Enter business address"
-          placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-          multiline
-        />
-      </View>
-      
-      <View style={styles.rowInputs}>
-        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+        
+        <Modal
+          visible={showBusinessTypeModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowBusinessTypeModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { 
+              backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Select Business Type
+                </Text>
+                <TouchableOpacity onPress={() => setShowBusinessTypeModal(false)}>
+                  <MaterialIcons name="close" size={24} color={isDarkMode ? theme.text : '#333'} />
+                </TouchableOpacity>
+              </View>
+              
+              <FlatList
+                data={businessTypes}
+                keyExtractor={(item) => item.id.toString()}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[styles.modalItem, { 
+                      backgroundColor: item.type_name === businessType ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                      borderBottomColor: isDarkMode ? theme.border : '#f0f0f0'
+                    }]}
+                    onPress={() => {
+                      setBusinessType(item.type_name);
+                      setShowBusinessTypeModal(false);
+                    }}
+                  >
+                    <Text style={[styles.modalItemText, { 
+                      color: isDarkMode ? theme.text : '#333',
+                      fontWeight: item.type_name === businessType ? '600' : 'normal'
+                    }]}>{item.type_name}</Text>
+                    {item.type_name === businessType && (
+                      <MaterialIcons name="check" size={20} color="#4CAF50" />
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
+        
+        <View style={styles.inputGroup}>
           <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-            Constituency *
+            Business Address *
           </Text>
           <TextInput
             style={[
@@ -257,58 +290,123 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
                 borderColor: isDarkMode ? '#444' : '#e0e0e0'
               }
             ]}
-            value={businessConstituency}
-            onChangeText={setBusinessConstituency}
-            placeholder="Constituency"
+            value={businessAddress}
+            onChangeText={setBusinessAddress}
+            placeholder="Enter business address"
+            placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
+            multiline
+          />
+        </View>
+        
+        <View style={styles.rowInputs}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+            <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Constituency *
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                { 
+                  backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                  color: isDarkMode ? theme.text : '#333',
+                  borderColor: isDarkMode ? '#444' : '#e0e0e0'
+                }
+              ]}
+              value={businessConstituency}
+              onChangeText={setBusinessConstituency}
+              placeholder="Constituency"
+              placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
+            />
+          </View>
+          
+          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+            <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              County *
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                { 
+                  backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                  color: isDarkMode ? theme.text : '#333',
+                  borderColor: isDarkMode ? '#444' : '#e0e0e0'
+                }
+              ]}
+              value={businessCounty}
+              onChangeText={setBusinessCounty}
+              placeholder="County"
+              placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
+            />
+          </View>
+        </View>
+        
+        <View style={styles.inputGroup}>
+          <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+            Contact Person *
+          </Text>
+          <TextInput
+            style={[
+              styles.textInput,
+              { 
+                backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                color: isDarkMode ? theme.text : '#333',
+                borderColor: isDarkMode ? '#444' : '#e0e0e0'
+              }
+            ]}
+            value={contactPerson}
+            onChangeText={setContactPerson}
+            placeholder="Full name of contact person"
             placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
           />
         </View>
         
-        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
-          <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-            County *
-          </Text>
-          <TextInput
-            style={[
-              styles.textInput,
-              { 
-                backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-                color: isDarkMode ? theme.text : '#333',
-                borderColor: isDarkMode ? '#444' : '#e0e0e0'
-              }
-            ]}
-            value={businessCounty}
-            onChangeText={setBusinessCounty}
-            placeholder="County"
-            placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-          />
+        <View style={styles.rowInputs}>
+          <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+            <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Email
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                { 
+                  backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                  color: isDarkMode ? theme.text : '#333',
+                  borderColor: isDarkMode ? '#444' : '#e0e0e0'
+                }
+              ]}
+              value={contactEmail}
+              onChangeText={setContactEmail}
+              placeholder="Email address"
+              placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
+              keyboardType="email-address"
+            />
+          </View>
+          
+          <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+            <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+              Phone *
+            </Text>
+            <TextInput
+              style={[
+                styles.textInput,
+                { 
+                  backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
+                  color: isDarkMode ? theme.text : '#333',
+                  borderColor: isDarkMode ? '#444' : '#e0e0e0'
+                }
+              ]}
+              value={contactPhone}
+              onChangeText={setContactPhone}
+              placeholder="Phone number"
+              placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
+              keyboardType="phone-pad"
+            />
+          </View>
         </View>
-      </View>
-      
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-          Contact Person *
-        </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            { 
-              backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-              color: isDarkMode ? theme.text : '#333',
-              borderColor: isDarkMode ? '#444' : '#e0e0e0'
-            }
-          ]}
-          value={contactPerson}
-          onChangeText={setContactPerson}
-          placeholder="Full name of contact person"
-          placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-        />
-      </View>
-      
-      <View style={styles.rowInputs}>
-        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+        
+        <View style={styles.inputGroup}>
           <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-            Email
+            Number of Employees *
           </Text>
           <TextInput
             style={[
@@ -319,93 +417,52 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
                 borderColor: isDarkMode ? '#444' : '#e0e0e0'
               }
             ]}
-            value={contactEmail}
-            onChangeText={setContactEmail}
-            placeholder="Email address"
+            value={numberOfEmployees}
+            onChangeText={setNumberOfEmployees}
+            placeholder="Number of employees"
             placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-            keyboardType="email-address"
+            keyboardType="numeric"
           />
         </View>
         
-        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+        <View style={styles.inputGroup}>
           <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-            Phone *
+            Business Description
           </Text>
           <TextInput
             style={[
-              styles.textInput,
+              styles.textArea,
               { 
                 backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
                 color: isDarkMode ? theme.text : '#333',
                 borderColor: isDarkMode ? '#444' : '#e0e0e0'
               }
             ]}
-            value={contactPhone}
-            onChangeText={setContactPhone}
-            placeholder="Phone number"
+            value={businessDescription}
+            onChangeText={setBusinessDescription}
+            placeholder="Brief description of your business"
             placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-            keyboardType="phone-pad"
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
           />
         </View>
-      </View>
-      
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-          Number of Employees *
-        </Text>
-        <TextInput
-          style={[
-            styles.textInput,
-            { 
-              backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-              color: isDarkMode ? theme.text : '#333',
-              borderColor: isDarkMode ? '#444' : '#e0e0e0'
-            }
-          ]}
-          value={numberOfEmployees}
-          onChangeText={setNumberOfEmployees}
-          placeholder="Number of employees"
-          placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-          keyboardType="numeric"
-        />
-      </View>
-      
-      <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-          Business Description
-        </Text>
-        <TextInput
-          style={[
-            styles.textArea,
-            { 
-              backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-              color: isDarkMode ? theme.text : '#333',
-              borderColor: isDarkMode ? '#444' : '#e0e0e0'
-            }
-          ]}
-          value={businessDescription}
-          onChangeText={setBusinessDescription}
-          placeholder="Brief description of your business"
-          placeholderTextColor={isDarkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.3)'}
-          multiline
-          numberOfLines={4}
-          textAlignVertical="top"
-        />
-      </View>
-      
-      <TouchableOpacity
-        style={[styles.nextButton, { opacity: loading ? 0.7 : 1 }]}
-        onPress={handleNextStep}
-        disabled={loading}
-      >
-        <Text style={styles.nextButtonText}>Next: Waste Details</Text>
-        <MaterialIcons name="arrow-forward" size={20} color="#fff" />
-      </TouchableOpacity>
-    </ScrollView>
+        
+        <TouchableOpacity
+          style={[styles.nextButton, { opacity: loading ? 0.7 : 1 }]}
+          onPress={handleNextStep}
+          disabled={loading}
+        >
+          <Text style={styles.nextButtonText}>Next: Waste Details</Text>
+          <MaterialIcons name="arrow-forward" size={20} color="#fff" />
+        </TouchableOpacity>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
   
   const renderWasteDetailsForm = () => (
-    <ScrollView style={styles.formContainer}>
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+      <ScrollView style={styles.formContainer} keyboardShouldPersistTaps="handled">
       <Text style={[styles.formTitle, { color: isDarkMode ? theme.text : '#333' }]}>
         Waste Management Details
       </Text>
@@ -496,24 +553,68 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
         <Text style={[styles.inputLabel, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
           Collection Frequency Preference *
         </Text>
-        <View style={[
-          styles.pickerContainer,
-          { 
-            backgroundColor: isDarkMode ? '#333' : '#f5f5f5',
-            borderColor: isDarkMode ? '#444' : '#e0e0e0'
-          }
-        ]}>
-          <Picker
-            selectedValue={collectionFrequencyPreference}
-            onValueChange={(itemValue) => setCollectionFrequencyPreference(itemValue)}
-            style={[styles.picker, { color: isDarkMode ? theme.text : '#333' }]}
-            dropdownIconColor={isDarkMode ? theme.text : '#333'}
-          >
-            {frequencyOptions.map((option) => (
-              <Picker.Item key={option.value} label={option.label} value={option.value} />
-            ))}
-          </Picker>
-        </View>
+        <TouchableOpacity 
+          style={[styles.pickerButton, { 
+            backgroundColor: isDarkMode ? theme.inputBackground : '#f5f5f5',
+            borderColor: isDarkMode ? theme.border : '#e0e0e0'
+          }]}
+          onPress={() => setShowFrequencyModal(true)}
+        >
+          <Text style={[styles.pickerButtonText, { 
+            color: collectionFrequency ? (isDarkMode ? theme.text : '#333') : (isDarkMode ? theme.textSecondary : '#999')
+          }]}>
+            {collectionFrequency ? collectionFrequencyOptions.find(opt => opt.value === collectionFrequency)?.label : 'Select frequency'}
+          </Text>
+          <MaterialIcons name="arrow-drop-down" size={24} color={isDarkMode ? theme.text : '#666'} />
+        </TouchableOpacity>
+        
+        {/* Collection Frequency Modal */}
+        <Modal
+          visible={showFrequencyModal}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setShowFrequencyModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={[styles.modalContent, { 
+              backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            }]}>
+              <View style={styles.modalHeader}>
+                <Text style={[styles.modalTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Select Collection Frequency
+                </Text>
+                <TouchableOpacity onPress={() => setShowFrequencyModal(false)}>
+                  <MaterialIcons name="close" size={24} color={isDarkMode ? theme.text : '#333'} />
+                </TouchableOpacity>
+              </View>
+              
+              <FlatList
+                data={collectionFrequencyOptions.filter(opt => opt.value !== '')}
+                keyExtractor={(item) => item.value}
+                renderItem={({ item }) => (
+                  <TouchableOpacity 
+                    style={[styles.modalItem, { 
+                      backgroundColor: item.value === collectionFrequency ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                      borderBottomColor: isDarkMode ? theme.border : '#f0f0f0'
+                    }]}
+                    onPress={() => {
+                      setCollectionFrequency(item.value);
+                      setShowFrequencyModal(false);
+                    }}
+                  >
+                    <Text style={[styles.modalItemText, { 
+                      color: isDarkMode ? theme.text : '#333',
+                      fontWeight: item.value === collectionFrequency ? '600' : 'normal'
+                    }]}>{item.label}</Text>
+                    {item.value === collectionFrequency && (
+                      <MaterialIcons name="check" size={20} color="#4CAF50" />
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            </View>
+          </View>
+        </Modal>
       </View>
       
       <View style={styles.switchContainer}>
@@ -590,50 +691,72 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
           )}
         </TouchableOpacity>
       </View>
-    </ScrollView>
+      </ScrollView>
+    </TouchableWithoutFeedback>
   );
   
+  // Scroll to input field when it gets focus
+  const scrollViewRef = useRef(null);
+  
+  const handleFocus = (event) => {
+    if (scrollViewRef.current) {
+      scrollViewRef.current.scrollToFocusedInput(event.target);
+    }
+  };
+  
   return (
-    <View style={[styles.container, { backgroundColor: isDarkMode ? theme.background : '#fff' }]}>
-      {/* Header */}
-      <View style={[styles.header, { 
-        backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
-        borderBottomColor: isDarkMode ? '#444' : '#e0e0e0'
-      }]}>
-        <TouchableOpacity 
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <MaterialIcons name="arrow-back" size={24} color={isDarkMode ? theme.text : '#333'} />
-        </TouchableOpacity>
-        <View style={styles.headerTitleContainer}>
-          <Text style={[styles.headerTitle, { color: isDarkMode ? theme.text : '#333' }]}>
-            Create Business Profile
-          </Text>
-          <Text style={[styles.headerSubtitle, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
-            {step === 1 ? 'Step 1: Business Details' : 'Step 2: Waste Details'}
-          </Text>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: isDarkMode ? theme.background : '#f5f7fa' }]}>
+      <StatusBar
+        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
+        backgroundColor={isDarkMode ? theme.cardBackground : '#fff'}
+      />
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoidingView}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
+      >
+        <View style={[styles.container, { backgroundColor: isDarkMode ? theme.background : '#f5f7fa' }]}>
+          {/* Header */}
+          <View style={[styles.header, { 
+            backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+            borderBottomColor: isDarkMode ? '#444' : '#e0e0e0'
+          }]}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <MaterialIcons name="arrow-back" size={24} color={isDarkMode ? theme.text : "#333"} />
+            </TouchableOpacity>
+            <Text style={[styles.headerTitle, {
+              color: isDarkMode ? theme.text : '#333'
+            }]}>Create Business Profile</Text>
+          </View>
+          
+          {/* Step Indicator */}
+          <View style={[styles.stepIndicator, { backgroundColor: isDarkMode ? 'rgba(76, 175, 80, 0.1)' : 'rgba(76, 175, 80, 0.1)' }]}>
+            <Text style={[styles.stepText, { color: isDarkMode ? theme.text : '#333' }]}>
+              {step === 1 ? 'Step 1: Business Details' : 'Step 2: Waste Details'}
+            </Text>
+          </View>
+          
+          {/* Form Content */}
+          {step === 1 ? renderBusinessDetailsForm() : renderWasteDetailsForm()}
         </View>
-      </View>
-      
-      {/* Progress Indicator */}
-      <View style={styles.progressContainer}>
-        <View style={[styles.progressStep, { backgroundColor: '#4CAF50' }]}>
-          <Text style={styles.progressStepText}>1</Text>
-        </View>
-        <View style={[styles.progressLine, { backgroundColor: step === 2 ? '#4CAF50' : (isDarkMode ? '#444' : '#e0e0e0') }]} />
-        <View style={[styles.progressStep, { backgroundColor: step === 2 ? '#4CAF50' : (isDarkMode ? '#444' : '#e0e0e0') }]}>
-          <Text style={styles.progressStepText}>2</Text>
-        </View>
-      </View>
-      
-      {/* Form Content */}
-      {step === 1 ? renderBusinessDetailsForm() : renderWasteDetailsForm()}
-    </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
+const { width, height } = Dimensions.get('window');
+
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#fff'
+  },
+  keyboardAvoidingView: {
+    flex: 1
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff'
@@ -642,95 +765,134 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0'
+    borderBottomColor: '#e0e0e0',
   },
   backButton: {
-    padding: 8
-  },
-  headerTitleContainer: {
-    marginLeft: 8
+    marginRight: 16,
   },
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#333'
   },
-  headerSubtitle: {
-    fontSize: 14,
-    color: '#666'
+  stepIndicator: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(76, 175, 80, 0.2)',
   },
-  progressContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16
+  stepText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#333',
   },
-  progressStep: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#4CAF50',
-    alignItems: 'center',
-    justifyContent: 'center'
-  },
-  progressStepText: {
-    color: '#fff',
-    fontWeight: '600'
-  },
-  progressLine: {
-    height: 2,
-    width: 100,
-    backgroundColor: '#e0e0e0'
-  },
+
   formContainer: {
     flex: 1,
-    padding: 16
+    padding: 20
   },
   formTitle: {
     fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 16,
+    fontWeight: '700',
+    marginBottom: 20,
     color: '#333'
   },
   inputGroup: {
-    marginBottom: 16
+    marginBottom: 20
   },
   inputLabel: {
-    fontSize: 14,
+    fontSize: 15,
     marginBottom: 8,
-    color: '#666'
+    color: '#666',
+    fontWeight: '500'
   },
   textInput: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
-    color: '#333'
+    color: '#333',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    marginBottom: 4
   },
   textArea: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
     color: '#333',
-    minHeight: 100
+    minHeight: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1
   },
-  pickerContainer: {
+  pickerButton: {
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
-    overflow: 'hidden'
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1
   },
-  picker: {
-    height: 50,
-    width: '100%'
+  pickerButtonText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 20,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  modalItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  modalItemText: {
+    fontSize: 16,
+    color: '#333',
   },
   rowInputs: {
     flexDirection: 'row',
@@ -746,82 +908,92 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 8,
-    marginRight: 8,
-    marginBottom: 8
+    borderRadius: 10,
+    padding: 10,
+    marginRight: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1
   },
   checkboxText: {
-    marginLeft: 4,
-    color: '#666'
+    marginLeft: 6,
+    color: '#666',
+    fontSize: 14
   },
   switchContainer: {
-    marginBottom: 16
+    marginBottom: 20
   },
   switchItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12
+    marginBottom: 16,
+    backgroundColor: '#f9f9f9',
+    padding: 14,
+    borderRadius: 10
   },
   switchLabel: {
     fontSize: 16,
-    color: '#666'
+    color: '#666',
+    fontWeight: '500'
   },
   nextButton: {
     backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    borderRadius: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 16,
-    marginBottom: 32
+    marginTop: 20,
+    marginBottom: 32,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2
   },
   nextButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginRight: 8
   },
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 32
-  },
-  backButton: {
-    backgroundColor: '#757575',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    marginRight: 8
+    marginTop: 24,
+    marginBottom: 32,
+    paddingHorizontal: 0
   },
   backButtonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
     marginLeft: 8
   },
   submitButton: {
     backgroundColor: '#4CAF50',
-    borderRadius: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    borderRadius: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 24,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    flex: 2
+    flex: 1,
+    marginHorizontal: 0,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 17,
+    fontWeight: '700',
     marginRight: 8
   }
 });

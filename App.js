@@ -38,6 +38,9 @@ import SubscriptionPlanScreen from './components/SubscriptionPlanScreen';
 import UserDashboardScreen from './components/UserDashboardScreen';
 import WasteCalendarScreen from './components/WasteCalendarScreen';
 import WasteIdentificationScreen from './components/WasteIdentificationScreen';
+import BusinessProfileCreationScreen from './components/BusinessProfileCreationScreen';
+import BusinessProfilesScreen from './components/BusinessProfilesScreen';
+import BusinessProfileDetailScreen from './components/BusinessProfileDetailScreen';
 
 // Import managers
 import AgencyMessageDetailScreen from './components/AgencyMessageDetailScreen';
@@ -633,6 +636,9 @@ const AppContent = ({ navigationRef, linking }) => {
             <Stack.Screen name="CollectionTypeSelection" component={CollectionTypeSelectionScreen} />
             <Stack.Screen name="News" component={NewsScreen} />
             <Stack.Screen name="NewsDetail" component={NewsDetailScreen} />
+            <Stack.Screen name="BusinessProfileCreationScreen" component={BusinessProfileCreationScreen} />
+            <Stack.Screen name="BusinessProfilesScreen" component={BusinessProfilesScreen} />
+            <Stack.Screen name="BusinessProfileDetailScreen" component={BusinessProfileDetailScreen} />
           </>
         )}
       </Stack.Navigator>
