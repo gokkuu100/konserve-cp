@@ -256,9 +256,6 @@ konserve/
 ├── app/                    # Expo Router app directory
 ├── assets/                 # Images, fonts, and static assets
 ├── components/             # React Native components
-│   ├── screens/           # Main app screens
-│   ├── navigation/        # Navigation components
-│   └── ui/               # Reusable UI components
 ├── constants/             # App constants and configuration
 ├── contexts/              # React contexts for state management
 ├── database/              # Database schemas and migrations
