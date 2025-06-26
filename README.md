@@ -8,7 +8,7 @@
   [![Supabase](https://img.shields.io/badge/Supabase-2.49.4-green.svg)](https://supabase.com/)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.8.3-blue.svg)](https://www.typescriptlang.org/)
   
-  *Empowering communities in Nairobi to manage waste smarter through education, real-time tracking, and convenient recycling.*
+  *Empowering communities, Digitizing Waste. Building a Greener Nairobi.*
 </div>
 
 ## 📱 Screenshots
