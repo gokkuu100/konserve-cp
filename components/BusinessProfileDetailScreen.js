@@ -1,12 +1,20 @@
-import React, { useState, useEffect } from 'react';
+import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
+import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, 
-  ActivityIndicator, Alert, Image, SafeAreaView, Dimensions
+  ActivityIndicator,
+  Dimensions,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  Animated
 } from 'react-native';
-import { MaterialIcons, Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
 import BusinessProfileManager from '../supabase/manager/business/BusinessProfileManager';
+import ContractNegotiationManager from '../supabase/manager/business/ContractNegotiationManager';
 
 const { width } = Dimensions.get('window');
 
@@ -18,6 +26,20 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
   const [error, setError] = useState(null);
+  const [contracts, setContracts] = useState([]);
+  const [loadingContracts, setLoadingContracts] = useState(false);
+  
+  // Collapsible sections state
+  const [detailsExpanded, setDetailsExpanded] = useState(true);
+  const [contactExpanded, setContactExpanded] = useState(true);
+  const [wasteExpanded, setWasteExpanded] = useState(true);
+  const [contractsExpanded, setContractsExpanded] = useState(true);
+  
+  // Animation values
+  const detailsAnimation = new Animated.Value(1);
+  const contactAnimation = new Animated.Value(1);
+  const wasteAnimation = new Animated.Value(1);
+  const contractsAnimation = new Animated.Value(1);
 
   useEffect(() => {
     const fetchProfileDetails = async () => {
@@ -34,6 +56,18 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
             plan: null,
             expiryDate: null
           });
+          
+          // Fetch contracts for this business profile
+          try {
+            setLoadingContracts(true);
+            const contractsData = await ContractNegotiationManager.getBusinessContracts(profileId);
+            setContracts(contractsData || []);
+          } catch (contractErr) {
+            console.error('Error fetching contracts:', contractErr);
+            // Don't set error for contracts, just log it
+          } finally {
+            setLoadingContracts(false);
+          }
         } else {
           setError('Profile not found');
         }
@@ -58,6 +92,69 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
 
   const handleViewSubscriptions = () => {
     navigation.navigate('BusinessSubscriptionPlanScreen', { businessProfileId: profileId });
+  };
+  
+  const handleViewContract = (contractId) => {
+    navigation.navigate('ContractNegotiationScreen', { 
+      contractId, 
+      businessProfileId: profileId,
+      status: 'existing'
+    });
+  };
+  
+  const toggleSection = (section, expanded, setExpanded, animation) => {
+    const toValue = expanded ? 0 : 1;
+    Animated.timing(animation, {
+      toValue,
+      duration: 300,
+      useNativeDriver: false
+    }).start();
+    setExpanded(!expanded);
+  };
+  
+  const toggleDetails = () => toggleSection('details', detailsExpanded, setDetailsExpanded, detailsAnimation);
+  const toggleContact = () => toggleSection('contact', contactExpanded, setContactExpanded, contactAnimation);
+  const toggleWaste = () => toggleSection('waste', wasteExpanded, setWasteExpanded, wasteAnimation);
+  const toggleContracts = () => toggleSection('contracts', contractsExpanded, setContractsExpanded, contractsAnimation);
+  
+  // Helper function to format contract status for display
+  const formatContractStatus = (status) => {
+    switch (status) {
+      case 'negotiation':
+        return 'In Negotiation';
+      case 'pending':
+        return 'Pending';
+      case 'signed':
+        return 'Signed';
+      case 'active':
+        return 'Active';
+      case 'completed':
+        return 'Completed';
+      case 'cancelled':
+        return 'Cancelled';
+      default:
+        return 'Unknown';
+    }
+  };
+  
+  // Helper function to get color based on contract status
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'negotiation':
+        return { bgColor: '#FFF9C4', textColor: '#F57F17' }; // Yellow
+      case 'pending':
+        return { bgColor: '#E1F5FE', textColor: '#0288D1' }; // Light Blue
+      case 'signed':
+        return { bgColor: '#E8F5E9', textColor: '#388E3C' }; // Light Green
+      case 'active':
+        return { bgColor: '#4CAF50', textColor: '#FFFFFF' }; // Green
+      case 'completed':
+        return { bgColor: '#E0E0E0', textColor: '#616161' }; // Grey
+      case 'cancelled':
+        return { bgColor: '#FFEBEE', textColor: '#D32F2F' }; // Light Red
+      default:
+        return { bgColor: '#E0E0E0', textColor: '#616161' }; // Grey
+    }
   };
 
   if (loading) {
@@ -134,12 +231,25 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
 
           <View style={styles.divider} />
 
-          {/* Business Details */}
-          <View style={styles.detailsSection}>
+          {/* Business Details - Collapsible */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={toggleDetails}>
             <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
               Business Details
             </Text>
-            
+            <MaterialIcons 
+              name={detailsExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+              size={24} 
+              color={isDarkMode ? theme.text : '#333'} 
+            />
+          </TouchableOpacity>
+          
+          <Animated.View style={[styles.collapsibleContent, {
+            maxHeight: detailsAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 500]
+            }),
+            opacity: detailsAnimation
+          }]}>
             <View style={styles.detailRow}>
               <MaterialIcons name="location-on" size={20} color="#4CAF50" />
               <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
@@ -169,16 +279,29 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
             )}
-          </View>
+          </Animated.View>
 
           <View style={styles.divider} />
 
-          {/* Contact Information */}
-          <View style={styles.detailsSection}>
+          {/* Contact Information - Collapsible */}
+          <TouchableOpacity style={styles.sectionHeader} onPress={toggleContact}>
             <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
               Contact Information
             </Text>
-            
+            <MaterialIcons 
+              name={contactExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+              size={24} 
+              color={isDarkMode ? theme.text : '#333'} 
+            />
+          </TouchableOpacity>
+          
+          <Animated.View style={[styles.collapsibleContent, {
+            maxHeight: contactAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 300]
+            }),
+            opacity: contactAnimation
+          }]}>
             <View style={styles.detailRow}>
               <MaterialIcons name="person" size={20} color="#4CAF50" />
               <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
@@ -201,54 +324,150 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
                 </Text>
               </View>
             )}
-          </View>
+          </Animated.View>
 
           <View style={styles.divider} />
 
-          {/* Waste Management Details */}
+          {/* Waste Management Details - Collapsible */}
           {profile.wasteDetails && (
-            <View style={styles.detailsSection}>
-              <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
-                Waste Management
-              </Text>
-              
-              <View style={styles.detailRow}>
-                <MaterialIcons name="delete" size={20} color="#4CAF50" />
-                <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
-                  {profile.wasteDetails.waste_generated_kg_per_week} kg/week
+            <>
+              <TouchableOpacity style={styles.sectionHeader} onPress={toggleWaste}>
+                <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Waste Management
                 </Text>
-              </View>
+                <MaterialIcons 
+                  name={wasteExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+                  size={24} 
+                  color={isDarkMode ? theme.text : '#333'} 
+                />
+              </TouchableOpacity>
               
-              <View style={styles.detailRow}>
-                <MaterialIcons name="category" size={20} color="#4CAF50" />
-                <View style={styles.wasteTypesContainer}>
-                  {profile.wasteDetails.waste_types.map((type, index) => (
-                    <View key={index} style={styles.wasteTypeTag}>
-                      <Text style={styles.wasteTypeText}>{type}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-              
-              <View style={styles.detailRow}>
-                <MaterialIcons name="schedule" size={20} color="#4CAF50" />
-                <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
-                  Preferred Collection: {profile.wasteDetails.collection_frequency_preference || 'Not specified'}
-                </Text>
-              </View>
-              
-              {profile.wasteDetails.current_disposal_method && (
+              <Animated.View style={[styles.collapsibleContent, {
+                maxHeight: wasteAnimation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, 400]
+                }),
+                opacity: wasteAnimation
+              }]}>
                 <View style={styles.detailRow}>
-                  <MaterialIcons name="eco" size={20} color="#4CAF50" />
+                  <MaterialIcons name="delete" size={20} color="#4CAF50" />
                   <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
-                    Current Disposal: {profile.wasteDetails.current_disposal_method}
+                    {profile.wasteDetails.waste_generated_kg_per_week} kg/week
                   </Text>
                 </View>
-              )}
-            </View>
+                
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="category" size={20} color="#4CAF50" />
+                  <View style={styles.wasteTypesContainer}>
+                    {profile.wasteDetails.waste_types.map((type, index) => (
+                      <View key={index} style={styles.wasteTypeTag}>
+                        <Text style={styles.wasteTypeText}>{type}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+                
+                <View style={styles.detailRow}>
+                  <MaterialIcons name="schedule" size={20} color="#4CAF50" />
+                  <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
+                    Preferred Collection: {profile.wasteDetails.collection_frequency_preference || 'Not specified'}
+                  </Text>
+                </View>
+                
+                {profile.wasteDetails.current_disposal_method && (
+                  <View style={styles.detailRow}>
+                    <MaterialIcons name="eco" size={20} color="#4CAF50" />
+                    <Text style={[styles.detailText, { color: isDarkMode ? theme.text : '#333' }]}>
+                      Current Disposal: {profile.wasteDetails.current_disposal_method}
+                    </Text>
+                  </View>
+                )}
+              </Animated.View>
+            </>
           )}
         </View>
 
+        {/* Contracts Card */}
+        <View style={[styles.profileCard, { 
+          backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
+          shadowColor: isDarkMode ? '#000' : '#000',
+          marginTop: 16
+        }]}>
+          <TouchableOpacity style={styles.sectionHeader} onPress={toggleContracts}>
+            <Text style={[styles.sectionTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+              Ongoing Contracts
+            </Text>
+            <MaterialIcons 
+              name={contractsExpanded ? "keyboard-arrow-up" : "keyboard-arrow-down"} 
+              size={24} 
+              color={isDarkMode ? theme.text : '#333'} 
+            />
+          </TouchableOpacity>
+          
+          <Animated.View style={[styles.collapsibleContent, {
+            maxHeight: contractsAnimation.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, 500]
+            }),
+            opacity: contractsAnimation
+          }]}>
+            {loadingContracts ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="small" color="#4CAF50" />
+                <Text style={[styles.loadingText, { color: isDarkMode ? theme.text : '#333' }]}>
+                  Loading contracts...
+                </Text>
+              </View>
+            ) : contracts.length > 0 ? (
+              contracts.map((contract, index) => (
+                <TouchableOpacity 
+                  key={contract.id} 
+                  style={[styles.contractItem, index < contracts.length - 1 && styles.contractItemBorder]}
+                  onPress={() => handleViewContract(contract.id)}
+                >
+                  <View style={styles.contractHeader}>
+                    <View style={styles.contractAgencyInfo}>
+                      <MaterialCommunityIcons name="truck-delivery" size={20} color="#4CAF50" />
+                      <Text style={[styles.contractAgencyName, { color: isDarkMode ? theme.text : '#333' }]}>
+                        {contract.agency?.name || 'Unknown Agency'}
+                      </Text>
+                    </View>
+                    <View style={[styles.contractStatusBadge, { 
+                      backgroundColor: getStatusColor(contract.status).bgColor 
+                    }]}>
+                      <Text style={styles.contractStatusText}>
+                        {formatContractStatus(contract.status)}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.contractDetails}>
+                    <Text style={[styles.contractTitle, { color: isDarkMode ? theme.text : '#333' }]}>
+                      {contract.title || 'Waste Collection Contract'}
+                    </Text>
+                    <Text style={[styles.contractDate, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                      Created: {new Date(contract.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))
+            ) : (
+              <View style={styles.emptyStateContainer}>
+                <MaterialIcons name="description" size={48} color="#E0E0E0" />
+                <Text style={[styles.emptyStateText, { color: isDarkMode ? theme.textSecondary : '#666' }]}>
+                  No active contracts found
+                </Text>
+                <TouchableOpacity 
+                  style={styles.findAgencyButton}
+                  onPress={handleViewAgencies}
+                >
+                  <Text style={styles.findAgencyButtonText}>Find Collection Agencies</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </Animated.View>
+        </View>
+        
         {/* Subscription Status Card */}
         <View style={[styles.subscriptionCard, { 
           backgroundColor: isDarkMode ? theme.cardBackground : '#fff',

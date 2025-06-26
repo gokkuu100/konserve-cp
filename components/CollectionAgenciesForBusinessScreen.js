@@ -740,13 +740,23 @@ const BusinessAgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSub
           )}
           
           <View style={styles.actionsContainer}>
-            <TouchableOpacity 
-              style={styles.subscribeButton}
-              onPress={() => onSubscribe()}
-            >
-              <MaterialIcons name="payment" size={18} color="#FFF" />
-              <Text style={styles.subscribeButtonText}>Request Subscription</Text>
-            </TouchableOpacity>
+            <View style={styles.actionButtonsRow}>
+              <TouchableOpacity
+                style={styles.subscribeButton}
+                onPress={() => handleSubscribe(agency)}
+              >
+                <MaterialIcons name="assignment" size={20} color="#fff" />
+                <Text style={styles.subscribeButtonText}>Subscribe</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.contractButton}
+                onPress={() => handleRequestContract(agency)}
+              >
+                <MaterialIcons name="handshake" size={20} color="#fff" />
+                <Text style={styles.contractButtonText}>Request Contract</Text>
+              </TouchableOpacity>
+            </View>
             
             <TouchableOpacity 
               style={styles.reviewsButton}
@@ -805,6 +815,7 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
   const [availableBusinessTypes, setAvailableBusinessTypes] = useState([]);
   const [availableCertifications, setAvailableCertifications] = useState([]);
   const agencyCardRefs = useRef({});
+  const businessProfileId = route.params?.businessProfileId;
 
   // Check if user has business profiles and load agencies
   useEffect(() => {
@@ -967,14 +978,17 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
   
   // Handle subscription request
   const handleSubscribe = (agency) => {
-    navigation.navigate('BusinessSubscriptionPlanScreen', { 
-      agency: {
-        id: agency.id,
-        name: agency.name,
-        constituency: agency.constituency,
-        price: agency.price,
-        capacity: agency.capacity
-      }
+    navigation.navigate('BusinessSubscriptionPlanScreen', {
+      businessProfileId,
+      agencyId: agency.id
+    });
+  };
+
+  const handleRequestContract = (agency) => {
+    navigation.navigate('ContractNegotiationScreen', {
+      businessProfileId,
+      agencyId: agency.id,
+      status: 'new'
     });
   };
 
@@ -2045,6 +2059,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: 8,
   },
+  actionButtonsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
   subscribeButton: {
     flex: 1,
     backgroundColor: '#4CAF50',
@@ -2057,6 +2076,22 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   subscribeButtonText: {
+    color: '#fff',
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  contractButton: {
+    flex: 1,
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 8,
+  },
+  contractButtonText: {
     color: '#fff',
     fontWeight: '500',
     marginLeft: 8,
