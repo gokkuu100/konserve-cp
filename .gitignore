@@ -41,6 +41,7 @@ app-example
 
 supabase/
 
+components/edgefunctions
 
 components/SubscriptionPlanScreen.js
 components/SubscriptionPlan.js
