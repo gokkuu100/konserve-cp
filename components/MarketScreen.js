@@ -14,7 +14,7 @@ import {
   TouchableOpacity,
   View
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext'; // Adjust path as needed for your auth context
+import { useAuth } from '../contexts/AuthContext';
 import MarketChatManager from '../supabase/manager/marketplace/MarketChatManager';
 import MarketListingManager from '../supabase/manager/marketplace/MarketListing';
 import { useTheme } from '../ThemeContext';
@@ -22,7 +22,7 @@ import { useTheme } from '../ThemeContext';
 // Main Marketplace Component
 const WasteMarketplace = () => {
   const navigation = useNavigation();
-  const { user } = useAuth(); // Get the current user from your auth context
+  const { user } = useAuth(); 
   const { isDarkMode, theme } = useTheme();
   const [buyers, setBuyers] = useState([]);
   const [filteredBuyers, setFilteredBuyers] = useState([]);
@@ -40,11 +40,9 @@ const WasteMarketplace = () => {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [loading, setLoading] = useState(true);
   
-  // Add these new state variables for the dropdown modals
   const [wasteTypeModalVisible, setWasteTypeModalVisible] = useState(false);
   const [buyerTypeModalVisible, setBuyerTypeModalVisible] = useState(false);
   
-  // Extract waste types from the buyers that are already loaded
   useEffect(() => {
     if (buyers.length > 0) {
       console.log('Extracting waste types from loaded buyers data...');
@@ -63,7 +61,6 @@ const WasteMarketplace = () => {
       const uniqueWasteTypes = [...new Set(allWasteTypes)];
       console.log('Extracted waste types from buyers:', uniqueWasteTypes);
       
-      // Only update if we found some types and our current list is empty
       if (uniqueWasteTypes.length > 0 && wasteTypes.length === 0) {
         setWasteTypes(uniqueWasteTypes);
       }
@@ -76,14 +73,12 @@ const WasteMarketplace = () => {
       try {
         setLoading(true);
         
-        // Get buyers first - we'll extract waste types from here if needed
         console.log('Fetching buyers...');
         const buyersData = await MarketListingManager.getBuyers();
         console.log(`Fetched ${buyersData.length} buyers`);
         setBuyers(buyersData);
         setFilteredBuyers(buyersData);
         
-        // Try waste types - this doesn't seem to be working
         const wasteTypesData = await MarketListingManager.getWasteTypes();
         if (wasteTypesData && wasteTypesData.length > 0) {
           console.log('Waste types from manager:', wasteTypesData);
@@ -135,7 +130,6 @@ const WasteMarketplace = () => {
     applyFilters();
   }, [activeFilters]);
   
-  // Count buyers per constituency
   const getBuyerCountByConstituency = (constituency) => {
     return buyers.filter(buyer => buyer.constituency === constituency).length;
   };
@@ -166,7 +160,6 @@ const WasteMarketplace = () => {
     }
   };
 
-  // Navigate to inbox
   const navigateToInbox = () => {
     if (user) {
       navigation.navigate('MarketInbox');
@@ -175,7 +168,6 @@ const WasteMarketplace = () => {
     }
   };
 
-  // Handler functions for filter selections
   const handleWasteTypeChange = (wasteType) => {
     setActiveFilters({...activeFilters, wasteType});
     setWasteTypeModalVisible(false);
@@ -186,11 +178,9 @@ const WasteMarketplace = () => {
     setBuyerTypeModalVisible(false);
   };
 
-  // Updated waste type modal with debugging
   const renderWasteTypeModal = () => {
     console.log('Rendering waste type modal, available types:', wasteTypes);
     
-    // Add a function to extract waste types from buyers if still empty
     const extractWasteTypesFromBuyers = () => {
       console.log('Manually extracting waste types from buyers...');
       
@@ -293,7 +283,7 @@ const WasteMarketplace = () => {
     );
   };
 
-  // Render buyer type selection modal
+  // buyer type selection modal
   const renderBuyerTypeModal = () => (
     <Modal
       animationType="slide"
@@ -343,7 +333,7 @@ const WasteMarketplace = () => {
     </Modal>
   );
 
-  // Render individual buyer card
+  // individual buyer card
   const renderBuyerCard = ({ item }) => (
     <TouchableOpacity 
       style={[styles.buyerCard, { 
@@ -424,7 +414,6 @@ const WasteMarketplace = () => {
     </TouchableOpacity>
   );
 
-  // Render buyer details modal
   const renderDetailsModal = () => (
     <Modal
       animationType="slide"
@@ -837,7 +826,6 @@ const WasteMarketplace = () => {
       {renderDetailsModal()}
       {renderContactModal()}
       
-      {/* Add loading indicator */}
       {loading && (
         <View style={[styles.loadingContainer, { 
           backgroundColor: isDarkMode ? 'rgba(0, 0, 0, 0.7)' : 'rgba(255, 255, 255, 0.7)' 
@@ -849,7 +837,6 @@ const WasteMarketplace = () => {
         </View>
       )}
       
-      {/* Add the filter modals to your render method */}
       {renderWasteTypeModal()}
       {renderBuyerTypeModal()}
     </SafeAreaView>
@@ -980,7 +967,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#333',
   },
-  // Buyer List Styles
   buyerListContainer: {
     flex: 1,
     backgroundColor: '#fff',
@@ -1145,7 +1131,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-  // Buyer Details Styles
   buyerDetailsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1297,7 +1282,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  // Contact Modal Styles
   contactModalContent: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 20,
@@ -1376,7 +1360,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#4CAF50',
   },
-  // Additional styles for the filter modals
   filterModalContent: {
     backgroundColor: 'white',
     borderTopLeftRadius: 20,

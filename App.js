@@ -11,7 +11,6 @@ import { AuthProvider, useAuth } from './contexts/AuthContext';
 import NotificationService from './supabase/services/NotificationService';
 import { ThemeProvider, useTheme } from './ThemeContext';
 
-// Import your screens
 import AgencyFeedbackScreen from './components/AgencyFeedbackScreen';
 import { MessageDetails, Messages } from './components/AgencyMessagesScreen';
 import ChatComponent from './components/ChatComponent';
@@ -42,7 +41,6 @@ import BusinessProfileCreationScreen from './components/BusinessProfileCreationS
 import BusinessProfilesScreen from './components/BusinessProfilesScreen';
 import BusinessProfileDetailScreen from './components/BusinessProfileDetailScreen';
 
-// Import managers
 import AgencyMessageDetailScreen from './components/AgencyMessageDetailScreen';
 import AgencyReviewScreen from './components/AgencyReviewScreen';
 import DeepLinkHandler from './components/DeepLinkHandler';
@@ -60,14 +58,14 @@ import NewsDetailScreen from './components/NewsDetailScreen';
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
-// This is our main bottom tab navigator
+// main bottom tab navigator
 function MainTabNavigator() {
   const { theme, isDarkMode } = useTheme();
   const { user, userId } = useAuth();
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   const [userConstituency, setUserConstituency] = useState(null);
   
-  // Setup global messageReadListeners if it doesn't exist
+  // global messageReadListeners
   useEffect(() => {
     if (!global.messageReadListeners) {
       global.messageReadListeners = [];
@@ -264,7 +262,6 @@ function MainTabNavigator() {
   );
 }
 
-// Placeholder for missing screen
 const BusinessSubscriptionPlanScreen = ({ navigation, route }) => {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
@@ -278,7 +275,6 @@ const App = () => {
   const [appIsReady, setAppIsReady] = useState(false);
   const navigationRef = useRef(null);
   
-  // Initialize the app
   useEffect(() => {
     async function initializeApp() {
       try {
@@ -345,7 +341,8 @@ const App = () => {
         }
       }
     },
-    // Add a custom getInitialURL to handle special cases
+    // Function to get initial URL
+    // Ued to handle deep links when the app is launched from a URL
     getInitialURL: async () => {
       const url = await Linking.getInitialURL();
       
@@ -482,7 +479,6 @@ const AppContent = ({ navigationRef, linking }) => {
       NotificationService.handleReceivedNotification(notification);
     });
     
-    // Handle notification responses (user taps on notification)
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
       
@@ -527,14 +523,12 @@ const AppContent = ({ navigationRef, linking }) => {
       }
     });
     
-    // Return cleanup function
     return () => {
       Notifications.removeNotificationSubscription(foregroundSubscription);
       Notifications.removeNotificationSubscription(responseSubscription);
     };
   }, [notificationsInitialized, navigationRef]);
   
-  // Set up constituency change listener
   useEffect(() => {
     let constituencyChangeSubscription = null;
     
@@ -557,7 +551,6 @@ const AppContent = ({ navigationRef, linking }) => {
     };
   }, [isAuthenticated, userId]);
   
-  // Create navigation theme based on app theme
   const navigationTheme = {
     ...(isDarkMode ? DarkTheme : DefaultTheme),
     colors: {

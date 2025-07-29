@@ -121,114 +121,114 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8f8f8',
-    paddingHorizontal: 12, // Reduced horizontal padding
+    paddingHorizontal: 12, 
   },
   header: {
-    fontSize: 28, // Slightly smaller
+    fontSize: 28, 
     fontWeight: 'bold',
-    marginTop: 15, // Reduced top margin
-    marginBottom: 10, // Reduced bottom margin
-    paddingHorizontal: 4, // Added horizontal padding
+    marginTop: 15, 
+    marginBottom: 10, 
+    paddingHorizontal: 4, 
   },
   sectionTitle: {
-    fontSize: 20, // Smaller font size
+    fontSize: 20, 
     fontWeight: '600',
-    marginTop: 16, // Reduced top margin
-    marginBottom: 8, // Reduced bottom margin
-    paddingHorizontal: 4, // Added horizontal padding
+    marginTop: 16, 
+    marginBottom: 8, 
+    paddingHorizontal: 4, 
   },
   card: {
     backgroundColor: '#ffffff',
-    borderRadius: 12, // Slightly smaller border radius
-    padding: 16, // Reduced padding
+    borderRadius: 12, 
+    padding: 16, 
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 0, // Removed bottom margin (divider will create space)
+    marginBottom: 0, 
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 }, // Reduced shadow
+    shadowOffset: { width: 0, height: 1 }, 
     shadowOpacity: 0.08,
     shadowRadius: 3,
-    elevation: 1, // Reduced elevation
+    elevation: 1, 
   },
   cardContent: {
     flex: 1,
-    marginRight: 12, // Reduced margin
+    marginRight: 12, 
   },
   cardTitle: {
-    fontSize: 18, // Smaller font size
+    fontSize: 18, 
     fontWeight: 'bold',
-    marginBottom: 6, // Reduced margin
+    marginBottom: 6, 
   },
   cardSubtitle: {
     fontSize: 13, // Smaller font size
     color: '#666',
-    marginBottom: 12, // Reduced margin
+    marginBottom: 12, 
   },
   button: {
     backgroundColor: '#f0f0f0', // Lighter color
-    paddingVertical: 8, // Reduced padding
-    paddingHorizontal: 14, // Reduced padding
-    borderRadius: 20, // Slightly smaller radius
+    paddingVertical: 8, 
+    paddingHorizontal: 14, 
+    borderRadius: 20, 
     alignSelf: 'flex-start',
-    marginTop: 4, // Reduced margin
+    marginTop: 4,
   },
   buttonText: {
-    fontSize: 13, // Smaller font size
+    fontSize: 13,
     fontWeight: '600',
   },
   imageContainer: {
-    width: 80, // Smaller size
-    height: 80, // Smaller size
+    width: 80, 
+    height: 80, 
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
-    borderRadius: 10, // Slightly smaller radius
+    borderRadius: 10, 
   },
   cardImage: {
-    width: 60, // Smaller size
-    height: 60, // Smaller size
+    width: 60, 
+    height: 60,
   },
   divider: {
     height: 1,
     backgroundColor: '#e0e0e0',
-    marginVertical: 16, // Space above and below divider
-    marginHorizontal: 4, // Small horizontal margin
+    marginVertical: 16, 
+    marginHorizontal: 4,
   },
   serviceOptionsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 0, // Removed bottom margin (divider will create space)
+    marginBottom: 0, 
   },
   serviceOption: {
-    backgroundColor: '#ffffff', // Changed to white background for more contrast
-    borderRadius: 12, // Slightly smaller radius
-    width: '48.5%', // Slightly wider to reduce gap
-    padding: 14, // Reduced padding
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    width: '48.5%', 
+    padding: 14,
     alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 3,
-    elevation: 1, // Added slight elevation for "clickable" appearance
+    elevation: 1
   },
   serviceImageContainer: {
-    width: 50, // Smaller size
-    height: 50, // Smaller size
+    width: 50, 
+    height: 50,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 6, // Reduced margin
+    marginBottom: 6,
   },
   serviceImage: {
-    width: 40, // Smaller size
-    height: 40, // Smaller size
+    width: 40, 
+    height: 40, 
   },
   serviceTitle: {
-    fontSize: 14, // Smaller font size
+    fontSize: 14, 
     fontWeight: '500',
     textAlign: 'center',
   },
   bottomPadding: {
-    height: 20, // Space at bottom of ScrollView
+    height: 20, 
   }
 });
 

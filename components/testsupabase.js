@@ -2,7 +2,6 @@
 const path = require('path');
 const dotenv = require('dotenv');
 
-// Configure dotenv to look in the parent directory
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 console.log('Supabase URL:', process.env.SUPABASE_URL);

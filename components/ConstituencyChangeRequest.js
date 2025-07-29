@@ -135,7 +135,7 @@ const ConstituencyChangeRequest = ({ visible, onClose, currentConstituency }) =>
       <LocationSelectionModal
         visible={locationModalVisible}
         onClose={() => setLocationModalVisible(false)}
-        onSelectCounty={() => {}} // We're only changing constituency, not county
+        onSelectCounty={() => {}} // No county selection
         onSelectConstituency={(constituency) => {
           setSelectedConstituency(constituency);
           setLocationModalVisible(false);

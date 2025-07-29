@@ -329,7 +329,6 @@ const aiFacts = [
 const WasteIdentificationScreen = ({ navigation }) => {
   const { user, isAuthenticated, loading: authLoading } = useAuth();
   
-  // State variables
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -349,14 +348,12 @@ const WasteIdentificationScreen = ({ navigation }) => {
       authLoading ? 'Loading auth state...' : 
       isAuthenticated ? 'Authenticated' : 'Not authenticated');
     
-    // Only redirect if auth is not loading and user is not authenticated
     if (!authLoading && !isAuthenticated) {
       console.log('User not authenticated, redirecting to Login');
       navigation.replace('Login');
       return;
     }
     
-    // If authenticated and not loading, get user name and request permissions
     if (isAuthenticated && !authLoading) {
       getUserName();
       requestPermissions();
@@ -406,7 +403,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
       
       console.log('Fetching user profile for:', user.id);
       
-      // Use ProfileManager to get user profile
       const { data: profile, error } = await ProfileManager.getUserProfile(user.id);
       
       if (error) {
@@ -445,7 +441,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
     outputRange: ['0%', '100%']
   });
 
-  // Start rotation animation for loading icon
   useEffect(() => {
     if (analyzing) {
       Animated.loop(
@@ -502,7 +497,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
         setError(null);
         setScanComplete(false);
         
-        // Automatically analyze the image once taken
         analyzeImage(result.assets[0].uri);
       }
     } catch (error) {
@@ -511,7 +505,7 @@ const WasteIdentificationScreen = ({ navigation }) => {
     }
   };
 
-  // Analyze image with Google Cloud Vision API - Modified to accept an image parameter
+  // Analyze image with Google Cloud Vision API 
   const analyzeImage = async (imageUri = null) => {
     if (!imageUri && !image) {
       Alert.alert('No Image', 'Please take or select an image first.');
@@ -540,8 +534,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // For testing purposes, let's simulate a successful response
-      // This will bypass the actual API call which requires a valid API key
       console.log('Image size (base64):', base64Image.length);
       
       // Check if we have a valid API key
@@ -564,7 +556,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
         return;
       }
 
-      // Prepare request to Google Cloud Vision API
       const visionRequest = {
         requests: [
           {
@@ -589,11 +580,9 @@ const WasteIdentificationScreen = ({ navigation }) => {
 
       console.log('Response received:', JSON.stringify(response.data));
 
-      // Process the response
       const labels = response.data.responses[0].labelAnnotations || [];
       const objects = response.data.responses[0].localizedObjectAnnotations || [];
       
-      // Combine and analyze results
       const allDetections = [
         ...labels.map(label => label.description.toLowerCase()),
         ...objects.map(obj => obj.name.toLowerCase())
@@ -602,11 +591,9 @@ const WasteIdentificationScreen = ({ navigation }) => {
       console.log('Detected items:', allDetections);
       setDetectedItems(allDetections);
       
-      // Determine waste category
       const wasteType = determineWasteType(allDetections);
       setWasteInfo(wasteType);
       
-      // Simulate a delay for better UX
       setTimeout(() => {
         setAnalyzing(false);
         setLoading(false);
@@ -706,16 +693,13 @@ const WasteIdentificationScreen = ({ navigation }) => {
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     resetAnalysis();
-    // Set refreshing to false after a short delay to show the refresh animation
     setTimeout(() => {
       setRefreshing(false);
     }, 1000);
   }, []);
 
-  // State for expanded fact
   const [expandedFactId, setExpandedFactId] = useState(null);
 
-  // Toggle fact expansion
   const toggleFactExpansion = (factId) => {
     if (expandedFactId === factId) {
       setExpandedFactId(null);
@@ -724,7 +708,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
     }
   };
   
-  // Toggle section expansion
   const toggleSectionExpansion = (section) => {
     if (expandedSection === section) {
       setExpandedSection(null);
@@ -733,12 +716,10 @@ const WasteIdentificationScreen = ({ navigation }) => {
     }
   };
 
-  // Toggle recycling tips visibility
   const toggleTips = () => {
     setShowTips(!showTips);
   };
 
-  // Calculate rotation for loading icon
   const spin = rotateAnim.interpolate({
     inputRange: [0, 1],
     outputRange: ['0deg', '360deg'],
@@ -820,7 +801,6 @@ const WasteIdentificationScreen = ({ navigation }) => {
             </View>
           )}
 
-          {/* Selected Image Preview - Only show when not analyzing and no results yet */}
           {image && !analyzing && !wasteInfo && (
             <View style={styles.selectedImageContainer}>
               <Text style={styles.sectionTitle}>Selected Image</Text>

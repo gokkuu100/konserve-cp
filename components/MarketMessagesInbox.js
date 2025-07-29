@@ -25,7 +25,6 @@ const MarketMessagesInbox = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // Fetch conversations for the current user
   const fetchConversations = async () => {
     try {
       setLoading(true);
@@ -42,16 +41,13 @@ const MarketMessagesInbox = () => {
     }
   };
 
-  // Initial load
   useEffect(() => {
     fetchConversations();
   }, [user]);
 
-  // Set up real-time subscription for new messages
   useEffect(() => {
     if (!user) return;
 
-    // Subscribe to new messages in marketplace_chats table
     const subscription = supabase
       .channel('marketplace_chats_changes')
       .on('postgres_changes', {
@@ -70,13 +66,11 @@ const MarketMessagesInbox = () => {
     };
   }, [user]);
 
-  // Handle refresh
   const handleRefresh = () => {
     setRefreshing(true);
     fetchConversations();
   };
 
-  // Navigate to direct chat with a buyer
   const openDirectChat = (buyer) => {
     console.log('Opening direct chat with buyer:', buyer);
     
@@ -87,7 +81,6 @@ const MarketMessagesInbox = () => {
     });
   };
 
-  // Render a conversation item
   const renderConversationItem = ({ item }) => (
     <TouchableOpacity 
       style={[

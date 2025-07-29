@@ -36,7 +36,6 @@ export function PaymentSuccessScreen() {
       }
       
       if (data?.success && data?.is_successful) {
-        // Now get subscription details
         const { data: subscriptionData, error: subscriptionError } = 
           await SubscriptionManager.getSubscriptionDetails(subscription_id);
         

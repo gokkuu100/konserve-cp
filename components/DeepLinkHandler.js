@@ -10,7 +10,6 @@ const DeepLinkHandler = () => {
   const appState = useRef(AppState.currentState);
   const processingDeepLink = useRef(false);
 
-  // Handler function for deep links
   const handleDeepLink = async (event) => {
     const url = event.url;
     
@@ -24,13 +23,12 @@ const DeepLinkHandler = () => {
       processingDeepLink.current = true;
       console.log('Received deep link:', url);
       
-      // Log all URL parameters for debugging
+      // Log all URL parameters f
       if (url) {
         const urlObj = new URL(url);
         console.log('Deep link parameters:', urlObj.searchParams.toString());
       }
       
-      // Check if this is an auth callback URL
       if (url && (
         url.includes('access_token=') || 
         url.includes('code=') || 
@@ -41,7 +39,6 @@ const DeepLinkHandler = () => {
         console.log('Processing auth deep link...');
         
         try {
-          // Exchange the code for a session
           const { data, error } = await supabase.auth.exchangeCodeForSession(url);
           
           if (error) {
@@ -61,7 +58,6 @@ const DeepLinkHandler = () => {
             global.authSession = data.session;
             global.authUser = data.user;
             
-            // Check if user profile is complete
             if (data.user?.id) {
               const { data: profile, error: profileError } = 
                 await ProfileManager.getUserProfile(data.user.id);
@@ -72,10 +68,8 @@ const DeepLinkHandler = () => {
               
               console.log('User profile status:', profile ? 'Found' : 'Not found');
               
-              // Profile doesn't exist or is incomplete (missing constituency)
               if (!profile || !profile.constituency) {
                 console.log('Navigating to profile completion screen');
-                // Use setTimeout to ensure navigation happens after current JS execution
                 setTimeout(() => {
                   navigation.reset({
                     index: 0,
@@ -90,12 +84,9 @@ const DeepLinkHandler = () => {
                   });
                 }, 100);
               } else {
-                // Profile is complete, navigate to main app
                 console.log('Profile complete, navigating to MainTabs');
-                // Assuming you have stored signIn in a global context
                 if (global.authContext && typeof global.authContext.signIn === 'function') {
                   await global.authContext.signIn(null, null, data.session);
-                  // Use setTimeout to ensure navigation happens after current JS execution
                   setTimeout(() => {
                     navigation.reset({
                       index: 0,
@@ -121,7 +112,6 @@ const DeepLinkHandler = () => {
 
   // Set up deep link handling
   useEffect(() => {
-    // This will fire when a deep link opens the app
     const subscription = Linking.addEventListener('url', handleDeepLink);
     
     // Check for initial URL that might have opened the app
@@ -137,7 +127,6 @@ const DeepLinkHandler = () => {
       if (appState.current.match(/inactive|background/) && nextAppState === 'active') {
         console.log('App has come to the foreground');
         
-        // Check for a new session
         supabase.auth.getSession().then(({ data }) => {
           if (data?.session && global.authContext && !global.authContext.isAuthenticated) {
             console.log('Found session after app foregrounded');
@@ -157,7 +146,7 @@ const DeepLinkHandler = () => {
     };
   }, [navigation]);
 
-  return null; // This component doesn't render anything
+  return null; 
 };
 
 export default DeepLinkHandler; 

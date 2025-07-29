@@ -35,7 +35,6 @@ const MarketDirectChat = () => {
   const [uploading, setUploading] = useState(false);
   const flatListRef = useRef(null);
 
-  // Add a debug log to verify the buyer info being passed
   useEffect(() => {
     console.log('MarketDirectChat - Buyer info:', { buyerId, buyerName, buyerLogo });
   }, [buyerId, buyerName, buyerLogo]);
@@ -58,7 +57,7 @@ const MarketDirectChat = () => {
     }
   };
 
-  // Initial load
+  
   useEffect(() => {
     fetchMessages();
     
@@ -66,18 +65,15 @@ const MarketDirectChat = () => {
     setupRealtimeSubscription();
     
     return () => {
-      // Cleanup subscription on component unmount
       cleanupRealtimeSubscription();
     };
   }, [user, buyerId]);
 
-  // Extract subscription logic to a separate function for better organization
   const setupRealtimeSubscription = () => {
     if (!user || !buyerId) return;
 
     console.log('Setting up real-time subscription for chat messages');
     
-    // Subscribe to ALL changes in marketplace_chats table relating to this conversation
     const subscription = supabase
       .channel('direct_chat_messages')
       .on('postgres_changes', {
@@ -91,9 +87,7 @@ const MarketDirectChat = () => {
         if (payload.eventType === 'INSERT') {
           const newMessage = payload.new;
           
-          // Add the message to state if it doesn't exist already
           setMessages(prev => {
-            // Check if message already exists to prevent duplicates
             const messageExists = prev.some(msg => msg.id === newMessage.id);
             if (messageExists) return prev;
             
@@ -108,7 +102,6 @@ const MarketDirectChat = () => {
             return updatedMessages;
           });
           
-          // Mark message as read if it's from the buyer
           if (newMessage.sender_id === buyerId) {
             MarketChatManager.markMessageAsRead(newMessage.id);
           }
@@ -116,7 +109,6 @@ const MarketDirectChat = () => {
       })
       .subscribe();
     
-    // Store subscription reference for cleanup
     window.chatSubscription = subscription;
   };
   
@@ -129,12 +121,11 @@ const MarketDirectChat = () => {
     }
   };
 
-  // Send a text message with optimistic update
   const sendMessage = async () => {
     if (!inputMessage.trim() || !user || !buyerId) return;
     
     const trimmedMessage = inputMessage.trim();
-    setInputMessage(''); // Clear input immediately for better UX
+    setInputMessage(''); // Clear input immediately 
     
     try {
       setSending(true);
@@ -148,7 +139,6 @@ const MarketDirectChat = () => {
         conversation_id: `${user.id}_${buyerId}`,
       };
       
-      // Create optimistic message to show immediately
       const optimisticMessage = {
         id: `temp-${Date.now()}`,
         sender_id: user.id,
@@ -158,13 +148,12 @@ const MarketDirectChat = () => {
         conversation_id: `${user.id}_${buyerId}`,
         created_at: new Date().toISOString(),
         is_read: false,
-        _isOptimistic: true // Flag to identify optimistic messages
+        _isOptimistic: true 
       };
       
       // Add optimistic message to UI immediately
       setMessages(prev => [...prev, optimisticMessage]);
       
-      // Scroll to bottom after adding optimistic message
       setTimeout(() => {
         flatListRef.current?.scrollToEnd({ animated: true });
       }, 50);
@@ -184,10 +173,8 @@ const MarketDirectChat = () => {
       console.error('Error sending message:', error);
       Alert.alert('Error', 'Failed to send message. Please try again.');
       
-      // Restore the input message if sending failed
       setInputMessage(trimmedMessage);
       
-      // Remove optimistic message on failure
       setMessages(prev => prev.filter(msg => !msg._isOptimistic));
     } finally {
       setSending(false);
@@ -204,7 +191,6 @@ const MarketDirectChat = () => {
         return;
       }
 
-      // Pick the image
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
@@ -230,7 +216,6 @@ const MarketDirectChat = () => {
 
       // Prepare the file
       const fileExt = imageFile.uri.split('.').pop();
-      // Generate a unique filename without using the uuid package
       const timestamp = new Date().getTime();
       const random = Math.floor(Math.random() * 10000);
       const fileName = `${timestamp}_${random}.${fileExt}`;
@@ -423,7 +408,6 @@ const MarketDirectChat = () => {
 
   // Add this at the top level of the component
   useEffect(() => {
-    // Define a global refresh function that can be called from notification handlers
     global.refreshMarketMessages = fetchMessages;
     
     return () => {

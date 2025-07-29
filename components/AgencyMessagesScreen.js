@@ -44,22 +44,21 @@ const AgencyMessagesScreen = ({ navigation }) => {
   }, [isAuthenticated, loading]);
 
   useEffect(() => {
-    // Define a global refresh function that can be called from notification handlers
+    // Global refresh function
     global.refreshAgencyMessages = checkSubscriptionsAndLoadMessages;
     
     return () => {
-      // Clean up
       global.refreshAgencyMessages = null;
     };
   }, [checkSubscriptionsAndLoadMessages]);
 
-  // Load subscriptions and then messages - modified to start with a specific agency
+
   const checkSubscriptionsAndLoadMessages = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // First check if user has active subscriptions
+      // check if user has active subscriptions
       const { result: hasSubscriptions, agencies, error: subError } = 
         await AgencyMessageManager.getActiveSubscriptions(userId);
         
@@ -75,12 +74,11 @@ const AgencyMessagesScreen = ({ navigation }) => {
       
       setSubscribedAgencies(agencies);
       
-      // Always select the first agency by default instead of loading all messages
+      // Selects first agency by default
       if (agencies.length > 0) {
         setSelectedAgency(agencies[0].id);
         await loadAgencyMessages(agencies[0].id);
       } else {
-        // Only load all messages if there are no agencies (shouldn't happen)
         await loadAllMessages();
       }
     } catch (err) {
@@ -140,7 +138,7 @@ const AgencyMessagesScreen = ({ navigation }) => {
     }
   };
 
-  // Handle pull-to-refresh
+  // pull-to-refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     checkSubscriptionsAndLoadMessages();
@@ -152,11 +150,11 @@ const AgencyMessagesScreen = ({ navigation }) => {
     loadAgencyMessages(agencyId);
   };
 
-  // Render agency selector - modified to make dropdown scrollable
+
   const renderAgencySelector = () => {
     if (!subscribedAgencies || subscribedAgencies.length <= 0) return null;
     
-    // Find the selected agency object
+    // Finds the selected agency object
     const selectedAgencyObj = subscribedAgencies.find(a => a.id === selectedAgency) || subscribedAgencies[0];
     
     return (
@@ -265,7 +263,7 @@ const AgencyMessagesScreen = ({ navigation }) => {
     );
   };
 
-  // Format timestamp for display
+  // timestamp for display
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
     
@@ -275,17 +273,16 @@ const AgencyMessagesScreen = ({ navigation }) => {
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) {
-      // Today - show time
+      // Today 
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (diffDays === 1) {
       // Yesterday
       return 'Yesterday';
     } else if (diffDays < 7) {
-      // Within a week - show day name
+      // Within a week 
       const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
       return days[date.getDay()];
     } else {
-      // Older - show date
       return date.toLocaleDateString();
     }
   };
@@ -309,10 +306,9 @@ const AgencyMessagesScreen = ({ navigation }) => {
     }
   };
 
-  // Handle message tap
+  
   const handleMessagePress = async (message) => {
     try {
-      // Only mark direct messages as read if they're not already read
       if (message.message_source === 'direct' && !message.is_read) {
         const { success } = await AgencyMessageManager.markMessageAsRead(message.id);
         
@@ -326,7 +322,6 @@ const AgencyMessagesScreen = ({ navigation }) => {
         }
     }
     
-    // Navigate to message details
     navigation.navigate('AgencyMessageDetail', { message });
     } catch (error) {
       console.error('Error handling message press:', error);

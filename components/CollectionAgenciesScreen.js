@@ -89,7 +89,6 @@ const RouteMap = ({ coordinates }) => {
   );
 };
 
-// Agency Card Component
 const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, onViewReviews }, ref) => {
   const [animation] = useState(new Animated.Value(0));
   const [showFullMap, setShowFullMap] = useState(false);
@@ -104,7 +103,6 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
   const { user, isAuthenticated } = useAuth();
   const { isDarkMode, theme } = useTheme();
   
-  // Expose the toggleReviewForm method to parent component
   useImperativeHandle(ref, () => ({
     toggleReviewForm: () => {
       setShowReviewForm(!showReviewForm);
@@ -118,7 +116,6 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
       useNativeDriver: false,
     }).start();
     
-    // Check if user can review this agency when the card is expanded
     if (expanded) {
       checkReviewEligibility();
     }
@@ -126,7 +123,6 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
   
   const checkReviewEligibility = async () => {
     try {
-      // First check if user is authenticated
       if (!isAuthenticated || !user) {
         console.log('User is not authenticated');
         setCanReview(false);
@@ -273,7 +269,6 @@ const AgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, 
   const formatTime = (timeString) => {
     if (!timeString) return '';
     
-    // Parse the timeString which might be in format like "08:00:00"
     const [hours, minutes] = timeString.split(':');
     const h = parseInt(hours, 10);
     const m = parseInt(minutes, 10);
@@ -776,20 +771,17 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
   const [reviewsError, setReviewsError] = useState(null);
   const agencyCardRefs = useRef({});
 
-  // Load user profile and agencies on component mount
   useEffect(() => {
     loadUserProfile();
     loadAgencies();
   }, []);
   
-  // Filter agencies when constituency changes or agencies list updates
   useEffect(() => {
     if (agencies.length > 0) {
       filterAgenciesByConstituency(agencies, selectedConstituency);
     }
   }, [selectedConstituency, agencies]);
 
-  // Load user profile to get their constituency
   const loadUserProfile = async () => {
     try {
       const { data, error } = await ProfileManager.getUserProfile();
@@ -805,13 +797,11 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
     }
   };
   
-  // Load all agencies with details
   const loadAgencies = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch all agencies with their complete details
       const { data: agenciesData, error } = await AgencyManager.fetchAllAgenciesWithDetails();
       
       if (error) {
@@ -822,13 +812,11 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
         return;
       }
       
-      // Ensure we have valid data
       const validAgencies = Array.isArray(agenciesData) ? agenciesData : [];
       console.log("Fetched agencies:", validAgencies.length);
       
       setAgencies(validAgencies);
       
-      // Extract unique constituencies from agencies
       const uniqueConstituencies = [...new Set(
         validAgencies
           .map(agency => agency.constituency)
@@ -893,13 +881,11 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
       setLoadingReviews(true);
       setReviewsError(null);
       
-      // Anyone can view reviews, but we need to check if they can add reviews
       let canAddReview = false;
       
       if (user && user.id) {
         console.log(`Checking review eligibility for user: ${user.id} agency: ${agency.id}`);
         
-        // Check if user has ever had a subscription (active or expired) to this agency
         const { data: hasEverSubscribed, error: subscriptionError } = 
           await SubscriptionManager.checkEverSubscribedToAgency(user.id, agency.id);
         
@@ -911,7 +897,6 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
         }
       }
       
-      // Navigate to the reviews screen with the agency ID and name
       navigation.navigate('AgencyReviews', { 
         agencyId: agency.id,
         agencyName: agency.name,
@@ -922,7 +907,6 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
       console.error('Error checking review eligibility:', error);
       setReviewsError('Failed to check review eligibility. Please try again.');
       
-      // If there's an error, still allow viewing reviews but not adding them
       navigation.navigate('AgencyReviews', { 
         agencyId: agency.id,
         agencyName: agency.name,
@@ -1011,7 +995,6 @@ const CollectionAgenciesScreen = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
       
-      {/* Constituency Dropdown Menu - Fixed for dark mode */}
       {constituencyDropdownOpen && (
         <View style={[styles.dropdownMenuContainer]}>
           <TouchableOpacity 

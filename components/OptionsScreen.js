@@ -15,7 +15,6 @@ const OptionsScreen = ({ navigation, route }) => {
     avatar: null
   });
 
-  // Check authentication status
   useEffect(() => {
     console.log('Auth state in OptionsScreen:', isAuthenticated ? 'Authenticated' : 'Not authenticated');
     
@@ -26,14 +25,12 @@ const OptionsScreen = ({ navigation, route }) => {
     }
   }, [isAuthenticated, authLoading]);
 
-  // Load user data when component mounts
   useEffect(() => {
     if (isAuthenticated) {
       fetchUserData();
     }
   }, [isAuthenticated]);
 
-  // Handle updates from other screens
   useEffect(() => {
     if (route.params?.updatedUser) {
       setUser(prevUser => ({
@@ -110,8 +107,6 @@ const OptionsScreen = ({ navigation, route }) => {
             onPress: async () => {
               try {
                 await signOut();
-                // The AuthContext will handle the navigation automatically
-                // when isAuthenticated state changes, the App.js conditional rendering will take over
               } catch (error) {
                 console.error('Error signing out:', error);
                 Alert.alert('Error', `Failed to sign out: ${error.message}`);

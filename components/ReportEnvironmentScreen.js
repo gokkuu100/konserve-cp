@@ -156,10 +156,8 @@ const ReportEnvironmentScreen = ({ navigation }) => {
           return;
         }
         
-        // Update the images array with URIs for display
         setImages([...images, ...result.assets.map(asset => asset.uri)]);
         
-        // Also store the full image data including base64
         setImagesData([...imagesData, ...result.assets]);
       }
     } catch (error) {

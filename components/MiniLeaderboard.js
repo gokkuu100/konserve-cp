@@ -9,7 +9,6 @@ const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=4CAF50&color=fff&
 
 const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: propIsDarkMode }) => {
   const themeContext = useTheme();
-  // Use provided theme props or fall back to context
   const theme = propTheme || themeContext.theme;
   const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : themeContext.isDarkMode;
   
@@ -47,7 +46,6 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
         return;
       }
 
-      // First, get complete leaderboard data (limit to top 20 for efficiency)
       const { data: allLeaderboardData, error: leaderboardError } = 
         await LeaderboardManager.fetchLeaderboardData(20, 0);
       
@@ -60,7 +58,6 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
       const topUsers = (allLeaderboardData || []).slice(0, 3);
       setDisplayUsers(topUsers);
       
-      // IMPORTANT: Find current user directly in the leaderboard data
       const currentUserRank = allLeaderboardData?.find(user => 
         user.user_id === currentUserId
       );
@@ -72,35 +69,28 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
         // If user rank is more than 3, show users around them instead of top 3
         if (currentUserRank.rank > 3) {
           try {
-            // Find users directly above and below current user
             const usersAround = [];
             
-            // Find user above (if exists)
             const userAbove = allLeaderboardData.find(user => 
               user.rank === currentUserRank.rank - 1
             );
             if (userAbove) usersAround.push(userAbove);
             
-            // Add current user
             usersAround.push(currentUserRank);
             
-            // Find user below (if exists)
             const userBelow = allLeaderboardData.find(user => 
               user.rank === currentUserRank.rank + 1
             );
             if (userBelow) usersAround.push(userBelow);
             
-            // If we found surrounding users, display them
             if (usersAround.length > 1) {
               setDisplayUsers(usersAround);
             }
           } catch (error) {
             console.error('Error getting surrounding users:', error);
-            // Fall back to showing top 3 users
           }
         }
       } else {
-        // User is not on leaderboard
         console.log('User not found in leaderboard data');
         setUserNotRanked(true);
       }
@@ -123,7 +113,6 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
     // Check if the user_id matches the current user
     const isCurrentUser = item.user_id === userId;
     
-    // Determine medal or rank number to display
     const renderRankIndicator = (rank) => {
       if (rank === 1) {
         return (
@@ -189,7 +178,6 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
   };
 
 
-  // New UI for when user is not in leaderboard yet
   const renderUserNotRankedMessage = () => (
     <View style={styles.notRankedContainer}>
       <MaterialCommunityIcons name="trophy-outline" size={24} color="#888" />
@@ -280,7 +268,6 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
         </View>
       )}
       
-      {/* Show this when user is not yet in leaderboard */}
       {userNotRanked && (
         <View style={[styles.notRankedContainer, {
           backgroundColor: isDarkMode ? '#3e3e26' : '#FFF9C4',
@@ -300,7 +287,6 @@ const MiniLeaderboard = ({ onViewFullLeaderboard, theme: propTheme, isDarkMode: 
         </View>
       )}
       
-      {/* Only show this section when user is in leaderboard but not visible in top section */}
       {userRank && !displayUsers.some(user => user.user_id === userId) && !userNotRanked && (
         <View style={[styles.currentUserContainer, { 
           borderTopColor: isDarkMode ? '#333' : '#e0e0e0' 

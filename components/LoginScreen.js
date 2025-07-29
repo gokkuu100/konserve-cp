@@ -15,13 +15,13 @@ import {
   View
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { useAuth } from '../contexts/AuthContext'; // Updated import path
+import { useAuth } from '../contexts/AuthContext';
 import WebAuthHelper from '../supabase/helpers/WebAuthHelper';
 import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import { useTheme } from '../ThemeContext';
 
 const { width, height } = Dimensions.get('window');
-const imageHeight = height * 0.25; // Adjust this value to control the height of the image
+const imageHeight = height * 0.25; 
 const imageWidth = width;
 
 const LoginScreen = ({ navigation }) => {
@@ -30,7 +30,7 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const { signIn, isAuthenticated } = useAuth(); // Using useAuth hook
+  const { signIn, isAuthenticated } = useAuth(); 
   const { theme, isDarkMode } = useTheme();
 
   useEffect(() => {
@@ -40,7 +40,6 @@ const LoginScreen = ({ navigation }) => {
     }
   }, [isAuthenticated, navigation]);
 
-  // Make auth context available globally for DeepLinkHandler
   useEffect(() => {
     global.authContext = { signIn, isAuthenticated };
     
@@ -64,7 +63,7 @@ const LoginScreen = ({ navigation }) => {
         return;
       }
       
-      // No need to navigate here as the useEffect will handle it
+    
     } catch (error) {
       console.error('Login error:', error);
       Alert.alert('Error', 'An unexpected error occurred');
@@ -90,7 +89,6 @@ const LoginScreen = ({ navigation }) => {
       }
       
       if (!result.success) {
-        // Check if we have a session from deep linking that happened while this was processing
         if (global.authSucceeded && global.authSession) {
           console.log('Found session from deep link handler');
           await processAuthenticatedUser(
@@ -109,7 +107,7 @@ const LoginScreen = ({ navigation }) => {
         throw new Error('Authentication failed or was canceled');
       }
       
-      // We have a successful authentication
+      // successful authentication
       if (result.session && result.user) {
         await processAuthenticatedUser(result.user, result.session);
       } else {
@@ -118,7 +116,7 @@ const LoginScreen = ({ navigation }) => {
     } catch (error) {
       console.error('Google sign-in error:', error);
       
-      // Don't show cancellation errors
+    
       if (!error.message?.includes('canceled')) {
         Alert.alert(
           'Sign-In Failed', 
@@ -130,7 +128,6 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
-  // Helper function to process authenticated user
   const processAuthenticatedUser = async (user, session) => {
     try {
       console.log('Processing authenticated user:', user.email);
@@ -150,10 +147,10 @@ const LoginScreen = ({ navigation }) => {
           email: user.email,
           name: user.user_metadata?.full_name || ''
         });
-        return; // Exit early - we don't want to sign in yet
+        return; 
       }
       
-      // Profile is complete, sign in fully
+    
       console.log('Profile is complete, signing in user');
       await signIn(null, null, session);
       navigation.replace('MainTabs');
@@ -183,7 +180,7 @@ const LoginScreen = ({ navigation }) => {
             />
           </Svg>
           <Image
-            source={require('../assets/loginimage.jpg')}  // Use the imported image variable
+            source={require('../assets/loginimage.jpg')}  
             style={styles.topImage}
             resizeMode="cover"
           />
@@ -254,29 +251,29 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     backgroundColor: '#fff',
-    minHeight: height,  // Ensures the container fills the screen
-    width: '100%',      // Ensures the container fills the width
+    minHeight: height,  
+    width: '100%',      
   },
   imageContainer: {
     width: '100%',
     position: 'relative',
-    overflow: 'hidden', // Hide any part of the image that goes out of bounds
+    overflow: 'hidden', 
   },
   topImage: {
     width: '100%',
-    height: '100%',   // Ensure the image fills the container
-    position: 'absolute', // Ensures the image stays behind the SVG path
+    height: '100%', 
+    position: 'absolute', 
     top: 0,
   },
   curve: {
-    position: 'absolute', // Ensures the curve overlays the image
+    position: 'absolute', 
     top: 0,
     left: 0,
   },
   bottomContainer: {
     paddingHorizontal: 30,
     paddingTop: 20,
-    flex: 1, // Ensures the content below the image takes the remaining space
+    flex: 1, 
   },
   header: {
     flexDirection: 'row',

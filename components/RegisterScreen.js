@@ -43,8 +43,7 @@ const RegisterScreen = ({ navigation }) => {
   const handleRegister = async () => {
     const { username, email, password, confirmPassword, county, constituency } = form;
     
-    // Validation code remains the same...
-    // Validate all fields
+    
     if (!username.trim()) {
       Alert.alert('Missing Field', 'Please enter your username');
       return;
@@ -55,7 +54,7 @@ const RegisterScreen = ({ navigation }) => {
       return;
     }
 
-    // Basic email validation
+    // email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address');
@@ -90,7 +89,7 @@ const RegisterScreen = ({ navigation }) => {
     try {
       setIsLoading(true);
       
-      // First check if email already exists
+      // Check if email already exists
       const { data: existingUser } = await supabase
         .from('users')
         .select('email')
@@ -107,7 +106,7 @@ const RegisterScreen = ({ navigation }) => {
         return;
       }
       
-      // Register with temporary client (prevents auto-authentication)
+      // Register with temporary client 
       console.log("Registering user with email:", email.trim().toLowerCase());
       
       const tempSupabase = createClient(supabaseUrl, supabaseKey, {
@@ -138,9 +137,9 @@ const RegisterScreen = ({ navigation }) => {
         return;
       }
       
-      console.log("User registered successfully with ID:", data?.user?.id);
+      // console.log("User registered successfully with ID:", data?.user?.id);
       
-      // NEW CODE: Create user profile in the users table using admin API
+      // If registration is successful, create user profile
       if (data?.user?.id) {
         try {
           console.log("Creating user profile via edge function");
@@ -151,7 +150,7 @@ const RegisterScreen = ({ navigation }) => {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${supabaseKey}` // Anon key is fine here
+                'Authorization': `Bearer ${supabaseKey}` 
               },
               body: JSON.stringify({
                 userId: data.user.id,
@@ -180,7 +179,7 @@ const RegisterScreen = ({ navigation }) => {
       // Show success message and navigate to login
       Alert.alert(
         'Registration Successful',
-        'Your account has been created successfully! Please log in to continue.',
+        'Your account has been created successfully!  Please check your email to verify before logging in.',
         [{ text: 'Go to Login', onPress: () => navigation.navigate('Login') }]
       );
       

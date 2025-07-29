@@ -66,7 +66,7 @@ From: ${message.agency_name}
     return date.toLocaleDateString(undefined, options);
   };
 
-  // Message type style and icon
+  // Message style based on type
   const getMessageTypeInfo = () => {
     switch (message.message_type) {
       case 'announcement':

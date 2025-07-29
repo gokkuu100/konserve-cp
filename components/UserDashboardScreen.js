@@ -59,13 +59,11 @@ const UserDashboardScreen = ({ navigation }) => {
     fetchUnreadNotificationsCount();
   }, [isAuthenticated, authLoading, user]);
 
-  // ... keep your existing data loading functions ...
   const loadDashboardData = async () => {
     try {
       setIsLoading(true);
       setError(null);
       
-      // Fetch user profile data
       try {
         const { data: profile, error: profileError } = await ProfileManager.getUserProfile();
         if (!profileError && profile) {
@@ -77,7 +75,6 @@ const UserDashboardScreen = ({ navigation }) => {
         console.error('Profile fetch error:', profileError);
       }
 
-      // 1. Fetch subscription history for both active and expired subscriptions
       const { data: subscriptionHistory, error: historyError } = await supabase
         .from('subscription_history')
         .select(`
@@ -104,11 +101,9 @@ const UserDashboardScreen = ({ navigation }) => {
         return;
       }
 
-      // 2. Separate active and expired subscriptions
       const activeHistory = subscriptionHistory?.filter(sub => sub.status === 'active') || [];
       const expiredHistory = subscriptionHistory?.filter(sub => sub.status === 'expired') || [];
 
-      // 3. Extract all plan IDs and agency IDs for batch fetching
       const planIds = [...new Set([
         ...activeHistory.map(sub => sub.plan_id), 
         ...expiredHistory.map(sub => sub.plan_id)
@@ -124,7 +119,6 @@ const UserDashboardScreen = ({ navigation }) => {
         ...expiredHistory.map(sub => sub.subscription_id)
       ])].filter(Boolean);
 
-      // 4. Batch fetch all subscription plans with detailed information
       if (planIds.length > 0) {
         const { data: plans, error: plansError } = await supabase
           .from('subscription_plans')
@@ -146,7 +140,6 @@ const UserDashboardScreen = ({ navigation }) => {
         if (plansError) {
           console.error('Error fetching subscription plans:', plansError);
         } else {
-          // Create a lookup map for easy access
           const plansMap = {};
           plans.forEach(plan => {
             plansMap[plan.id] = plan;
@@ -188,7 +181,6 @@ const UserDashboardScreen = ({ navigation }) => {
         }
       }
 
-      // 6. Fetch user_subscription details for additional information
       if (subscriptionIds.length > 0) {
         try {
           const { data: userSubscriptions, error: userSubError } = await supabase
@@ -212,7 +204,6 @@ const UserDashboardScreen = ({ navigation }) => {
             .in('id', subscriptionIds);
 
           if (!userSubError && userSubscriptions) {
-            // Enhance subscription history with user_subscription details
             const enhancedActive = activeHistory.map(sub => {
               const userSub = userSubscriptions.find(us => us.id === sub.subscription_id);
               return userSub ? { ...sub, userSubscription: userSub } : sub;
@@ -240,7 +231,6 @@ const UserDashboardScreen = ({ navigation }) => {
         setExpiredSubscriptions(expiredHistory);
       }
 
-      // 8. Fetch user stats with safe handling
       try {
         const statsResult = await ProfileManager.getUserStats(userId);
         if (statsResult && !statsResult.error) {
@@ -329,15 +319,12 @@ const UserDashboardScreen = ({ navigation }) => {
     const endDate = new Date(endDateString);
     const today = new Date();
     
-    // Reset time portion for accurate day calculation
     endDate.setHours(0, 0, 0, 0);
     today.setHours(0, 0, 0, 0);
     
-    // Calculate difference in milliseconds and convert to days
     const diffTime = endDate.getTime() - today.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    // Return 0 if negative (already expired)
     return Math.max(0, diffDays);
   };
 
@@ -362,9 +349,7 @@ const UserDashboardScreen = ({ navigation }) => {
     }
   };
 
-  // Modified renderSubscriptionCard function with proper JSONB handling
   const renderSubscriptionCard = (subscription, isActive = true) => {
-    // Get basic data
     const planDetails = getSubscriptionPlanDetails(subscription.plan_id);
     const agencyDetails = agencies[subscription.agency_id] || {};
     const agencyName = agencyDetails.name || `Agency ID: ${subscription.agency_id}`;
@@ -375,7 +360,6 @@ const UserDashboardScreen = ({ navigation }) => {
     // Specific checks for plan types and collection days
     const isCustomPlan = planDetails && planDetails.plan_type === 'custom';
     
-    // Check for agency collection days
     const hasAgencyCollectionDays = planDetails && 
       planDetails.collection_days && 
       Array.isArray(planDetails.collection_days) && 
@@ -384,15 +368,12 @@ const UserDashboardScreen = ({ navigation }) => {
     // Parse custom_collection_dates from JSONB
     let customCollectionDates = [];
     try {
-      // Try to parse custom_collection_dates if it's a string
       if (subscription.custom_collection_dates) {
         if (typeof subscription.custom_collection_dates === 'string') {
           customCollectionDates = JSON.parse(subscription.custom_collection_dates);
         } else if (Array.isArray(subscription.custom_collection_dates)) {
-          // If it's already an array, use it directly
           customCollectionDates = subscription.custom_collection_dates;
         } else if (typeof subscription.custom_collection_dates === 'object') {
-          // If it's an object, try to convert it to an array
           customCollectionDates = Object.values(subscription.custom_collection_dates);
         }
       }
@@ -585,7 +566,7 @@ const UserDashboardScreen = ({ navigation }) => {
             </View>
           )}
           
-              {/* Custom Collection Days - Only show for custom plans */}
+              {/* Custom Collection Days  */}
               {isCustomPlan && (
                 <View>
                   <Text style={[styles.collectionSubtitle, { color: theme.textSecondary, marginTop: hasAgencyCollectionDays ? 16 : 0 }]}>
@@ -810,7 +791,6 @@ const UserDashboardScreen = ({ navigation }) => {
     );
   };
 
-  // ... keep loading state ...
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>

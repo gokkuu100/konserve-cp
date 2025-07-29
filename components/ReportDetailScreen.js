@@ -70,7 +70,7 @@ const ReportDetailScreen = ({ route, navigation }) => {
       
       if (error) throw error;
       
-      // Filter out the current report and limit to 3 related reports
+    
       const filtered = data
         .filter(item => item.id !== currentReportId)
         .slice(0, 3);
@@ -86,8 +86,7 @@ const ReportDetailScreen = ({ route, navigation }) => {
       if (report) {
         await Share.share({
           message: `Check out this environmental report: ${report.title}`,
-          // If you have a web version, you can include a URL
-          // url: `https://yourapp.com/reports/${reportId}`,
+          // url: `https://konnserve.com/reports/${reportId}`,
           title: report.title,
         });
       }

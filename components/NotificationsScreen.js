@@ -86,7 +86,6 @@ const NotificationsScreen = ({ navigation }) => {
       
       if (error) throw error;
       
-      // Update local state
       setNotifications(prevNotifications => 
         prevNotifications.map(notification => 
           !notification.read 
@@ -101,12 +100,10 @@ const NotificationsScreen = ({ navigation }) => {
 
   // Handle notification press
   const handleNotificationPress = (notification) => {
-    // Mark as read if not already read
     if (!notification.read) {
       markAsRead(notification.id);
     }
     
-    // Navigate based on notification type
     if (notification.type === 'subscription_expiry' && notification.subscription_id) {
       navigation.navigate('SubscriptionDetails', { 
         subscriptionId: notification.subscription_id 
@@ -119,11 +116,9 @@ const NotificationsScreen = ({ navigation }) => {
     try {
       setRefreshing(true);
       
-      // Run the background check
       const result = await subscriptionBackgroundService.checkSubscriptionsNow();
       console.log('Subscription check result:', result);
       
-      // Refresh notifications after check
       await fetchNotifications();
     } catch (error) {
       console.error('Error checking subscriptions:', error);
@@ -137,13 +132,11 @@ const NotificationsScreen = ({ navigation }) => {
     useCallback(() => {
       fetchNotifications();
       
-      // Initialize notification service if needed
       notificationService.initialize().catch(error => {
         console.error('Error initializing notifications:', error);
       });
       
       return () => {
-        // Cleanup if needed
       };
     }, [])
   );
@@ -157,7 +150,6 @@ const NotificationsScreen = ({ navigation }) => {
     }
   };
 
-  // Render a notification item
   const renderNotificationItem = ({ item }) => {
     const isSubscriptionExpiry = item.type === 'subscription_expiry';
     

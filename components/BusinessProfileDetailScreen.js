@@ -49,8 +49,7 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
         if (profileData) {
           setProfile(profileData);
           
-          // Check if there's an active subscription
-          // This is a placeholder - implement actual subscription check
+          // Check if active subscription
           setSubscriptionStatus({
             isActive: false,
             plan: null,
@@ -64,7 +63,6 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
             setContracts(contractsData || []);
           } catch (contractErr) {
             console.error('Error fetching contracts:', contractErr);
-            // Don't set error for contracts, just log it
           } finally {
             setLoadingContracts(false);
           }
@@ -187,7 +185,7 @@ const BusinessProfileDetailScreen = ({ route, navigation }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: isDarkMode ? theme.background : '#f5f7fa' }]}>
-      {/* Header */}
+
       <View style={[styles.header, {
         backgroundColor: isDarkMode ? theme.cardBackground : '#fff',
         borderBottomColor: isDarkMode ? '#444' : '#e0e0e0'

@@ -20,7 +20,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../ThemeContext';
 import FullScreenRouteMap from './FullScreenRouteMap';
 
-// Sample business agency mock data
+// business agency mock data
 const MOCK_BUSINESS_AGENCIES = [
   {
     id: 1,
@@ -354,7 +354,6 @@ const RouteMap = ({ coordinates }) => {
   );
 };
 
-// Business Agency Card Component
 const BusinessAgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSubscribe, onViewReviews }, ref) => {
   const [animation] = useState(new Animated.Value(0));
   const [showFullMap, setShowFullMap] = useState(false);
@@ -397,7 +396,6 @@ const BusinessAgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSub
   };
 
   const handleViewFullMap = (route) => {
-    // Make sure the route object has the expected properties
     const formattedRoute = {
       ...route,
       route_name: route.name || route.route_name || 'Collection Route',
@@ -412,7 +410,6 @@ const BusinessAgencyCard = React.forwardRef(({ agency, expanded, onToggle, onSub
   const formatTime = (timeString) => {
     if (!timeString) return '';
     
-    // Parse the timeString which might be in format like "08:00:00"
     const [hours, minutes] = timeString.split(':');
     const h = parseInt(hours, 10);
     const m = parseInt(minutes, 10);
@@ -802,7 +799,7 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
   const [agencies, setAgencies] = useState([]);
   const [filteredAgencies, setFilteredAgencies] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [isCheckingProfiles, setIsCheckingProfiles] = useState(true); // Start with loading state
+  const [isCheckingProfiles, setIsCheckingProfiles] = useState(true); 
   const [error, setError] = useState(null);
   const [constituencies, setConstituencies] = useState([]);
   const [minCapacity, setMinCapacity] = useState(null);
@@ -824,20 +821,16 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
       
       setIsCheckingProfiles(true);
       try {
-        // Check if user has any business profiles
         const userProfiles = await BusinessProfileManager.getBusinessProfilesByUserId(user.id);
         
         if (!userProfiles || userProfiles.length === 0) {
-          // No business profiles found, redirect to creation screen
           navigation.replace('BusinessProfileCreationScreen');
           return;
         }
         
-        // User has profiles, check if a specific profile was selected
         const { businessProfileId } = route.params || {};
         
         if (!businessProfileId && userProfiles.length > 0) {
-          // No specific profile selected, show the profiles list
           navigation.replace('BusinessProfilesScreen');
           return;
         }
@@ -848,7 +841,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
         if (fetchedAgencies && fetchedAgencies.length > 0) {
           setAgencies(fetchedAgencies);
           
-          // Extract unique constituencies from agencies
           const uniqueConstituencies = [...new Set(
             fetchedAgencies
               .map(agency => agency.constituency)
@@ -857,7 +849,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
           
           setConstituencies(['All Constituencies', ...uniqueConstituencies]);
           
-          // Extract all available business types
           const allBusinessTypes = new Set();
           fetchedAgencies.forEach(agency => {
             if (agency.business_types && Array.isArray(agency.business_types)) {
@@ -866,7 +857,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
           });
           setAvailableBusinessTypes(Array.from(allBusinessTypes));
           
-          // Extract all available certifications
           const allCertifications = new Set();
           fetchedAgencies.forEach(agency => {
             if (agency.certifications && Array.isArray(agency.certifications)) {
@@ -875,7 +865,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
           });
           setAvailableCertifications(Array.from(allCertifications));
           
-          // Set filtered agencies based on selected constituency
           setFilteredAgencies(fetchedAgencies);
         } else {
           console.warn('No business agencies found');
@@ -894,31 +883,25 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     checkBusinessProfilesAndLoadAgencies();
   }, [navigation, route.params, user]);
   
-  // Filter agencies when filters change
   useEffect(() => {
     filterAgencies();
   }, [selectedConstituency, filterOptions]);
 
-  // Filter agencies based on selected filters
   const filterAgencies = () => {
     let filtered = [...agencies];
     
-    // Filter by constituency if selected
     if (selectedConstituency && selectedConstituency !== 'All Constituencies') {
       filtered = filtered.filter(agency => agency.constituency === selectedConstituency);
     }
     
-    // Filter by minimum capacity
     if (filterOptions.minCapacity) {
       filtered = filtered.filter(agency => {
         if (!agency.capacity || !agency.capacity.min_capacity) return false;
-        // Extract the numeric part of the capacity (e.g., "50kg" -> 50)
         const capacityValue = parseInt(agency.capacity.min_capacity);
         return !isNaN(capacityValue) && capacityValue >= filterOptions.minCapacity;
       });
     }
     
-    // Filter by business type
     if (filterOptions.businessType) {
       filtered = filtered.filter(agency => 
         agency.business_types && 
@@ -926,7 +909,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
       );
     }
     
-    // Filter by certifications
     if (filterOptions.certifications && filterOptions.certifications.length > 0) {
       filtered = filtered.filter(agency => {
         if (!agency.certifications) return false;
@@ -949,13 +931,11 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     setShowFilterModal(false);
   };
   
-  // Apply new filters
   const applyFilters = () => {
     filterAgencies();
     setShowFilterModal(false);
   };
   
-  // Toggle certification selection in filters
   const toggleCertification = (cert) => {
     setFilterOptions(prevState => {
       const certifications = [...prevState.certifications];
@@ -971,12 +951,10 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     });
   };
   
-  // Toggle card expansion
   const toggleCardExpansion = (id) => {
     setExpandedCardId(expandedCardId === id ? null : id);
   };
   
-  // Handle subscription request
   const handleSubscribe = (agency) => {
     navigation.navigate('BusinessSubscriptionPlanScreen', {
       businessProfileId,
@@ -992,13 +970,11 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     });
   };
 
-  // Handle constituency selection
   const handleConstituencySelect = (constituency) => {
     setSelectedConstituency(constituency);
     setConstituencyDropdownOpen(false);
   };
 
-  // View agency reviews
   const handleViewReviews = (agency) => {
     navigation.navigate('AgencyReviews', { 
       agencyId: agency.id,
@@ -1007,7 +983,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     });
   };
 
-  // Render checking profiles loading state
   if (isCheckingProfiles) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: isDarkMode ? theme.background : '#fff' }]}>
@@ -1019,7 +994,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     );
   }
   
-  // Render agencies loading state
   if (isLoading) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: isDarkMode ? theme.background : '#fff' }]}>
@@ -1031,7 +1005,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
     );
   }
   
-  // Render error state
   if (error) {
     return (
       <SafeAreaView style={[styles.errorContainer, {
@@ -1228,7 +1201,6 @@ const CollectionAgenciesForBusinessScreen = ({ navigation, route }) => {
             </View>
             
             <ScrollView style={styles.filterScroll}>
-              {/* Minimum Capacity Filter */}
               <View style={styles.filterSection}>
                 <Text style={[styles.filterSectionTitle, {
                   color: isDarkMode ? theme.text : '#333'

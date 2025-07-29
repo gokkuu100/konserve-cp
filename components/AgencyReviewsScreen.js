@@ -127,7 +127,7 @@ const AgencyReviewsScreen = ({ route, navigation }) => {
       setUserRedemptions(data || []);
       setTotalPoints(points);
       
-      // Update user's points in the database to ensure leaderboard accuracy
+      // Updates user's points in the database to ensure leaderboard accuracy
       await LeaderboardManager.updateUserLeaderboardPoints(user.id);
       
     } catch (error) {
@@ -146,7 +146,6 @@ const AgencyReviewsScreen = ({ route, navigation }) => {
         return;
       }
       
-      // Fetch leaderboard data (top 10 users)
       const { data: leaderboard, error: leaderboardError } = 
         await LeaderboardManager.fetchLeaderboardData(10);
       
@@ -258,12 +257,11 @@ const AgencyReviewsScreen = ({ route, navigation }) => {
 
       if (error) throw error;
 
-      // Update agency ratings
       await FeedbackManager.updateAgencyRatings(agencyId);
 
       setShowReviewModal(false);
       resetForm();
-      fetchReviews(); // Refresh reviews list
+      fetchReviews();
 
       Alert.alert('Success', 'Thank you for your review!');
     } catch (error) {
@@ -577,7 +575,6 @@ const AgencyReviewsScreen = ({ route, navigation }) => {
         animationType="slide"
         transparent={true}
       >
-        {/* ... existing modal content ... */}
       </Modal>
     </SafeAreaView>
   );

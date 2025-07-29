@@ -33,10 +33,8 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     if (status === 'new') {
-      // New contract, no need to fetch existing data
       setLoading(false);
     } else {
-      // Existing contract, fetch data
       fetchContractDetails();
     }
   }, [contractId, status]);
@@ -56,8 +54,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
         );
         setBusinessProfile(businessData);
         
-        // Fetch agency details (placeholder - implement actual agency fetch)
-        // This would typically come from an AgencyManager
         setAgency(contractData.agency);
         
         // Fetch negotiation steps
@@ -96,7 +92,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
       
-      // Create a new contract negotiation
       const contractData = {
         businessProfileId,
         agencyId,
@@ -110,7 +105,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
       
       const newContractId = await ContractNegotiationManager.createContractNegotiation(contractData);
       
-      // Navigate to the new contract
       navigation.replace('ContractNegotiationScreen', {
         contractId: newContractId,
         businessProfileId,
@@ -142,10 +136,8 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
         ...responseData
       });
       
-      // Refresh data
       await fetchContractDetails();
       
-      // Show success message
       Alert.alert(
         'Response Sent',
         'Your response has been sent successfully.',
@@ -188,7 +180,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
   };
 
   const renderNegotiationForm = () => {
-    // For new contracts, show initial offer form
     if (status === 'new') {
       return (
         <InitialOfferForm 
@@ -198,7 +189,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
       );
     }
     
-    // For existing contracts, show appropriate form based on current step
     if (!currentStep) {
       return (
         <View style={styles.completedContainer}>
@@ -239,7 +229,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
         );
       
       case 'clarification':
-        // If there are questions to answer
         if (previousOffer?.clarificationQuestions?.questions) {
           return (
             <ClarificationForm 
@@ -248,7 +237,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
             />
           );
         } else {
-          // If we need to ask questions
           return (
             <CounterOfferForm 
               onSubmit={handleNegotiationResponse}
@@ -344,7 +332,6 @@ const ContractNegotiationScreen = ({ route, navigation }) => {
         <View style={{ width: 40 }} />
       </View>
 
-      {/* Step Progress */}
       {status !== 'new' && renderStepProgress()}
 
       {/* Negotiation Form */}

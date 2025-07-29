@@ -43,11 +43,9 @@ const SettingsScreen = ({ navigation }) => {
     try {
       setIsLoading(true);
       
-      // Load from AsyncStorage first
       const savedSettings = await AsyncStorage.getItem('userSettings');
       let settings = savedSettings ? JSON.parse(savedSettings) : null;
       
-      // If user is authenticated, try to get settings from Supabase
       if (userId) {
         const { data, error } = await supabase
           .from('user_settings')
@@ -76,7 +74,6 @@ const SettingsScreen = ({ navigation }) => {
             reminderFrequency: data.reminderFrequency || 'daily'
           };
           
-          // Save merged settings back to AsyncStorage
           await AsyncStorage.setItem('userSettings', JSON.stringify(settings));
         }
       }
@@ -96,7 +93,6 @@ const SettingsScreen = ({ navigation }) => {
       // Save to AsyncStorage as before
       await AsyncStorage.setItem('userSettings', JSON.stringify(newSettings));
       
-      // Save notification settings to Supabase if user is authenticated
       if (userId) {
         const { error } = await supabase
           .from('user_settings')
@@ -123,7 +119,6 @@ const SettingsScreen = ({ navigation }) => {
     setSettings(newSettings);
     saveSettings(newSettings);
     
-    // If toggling notification settings, refresh permissions
     if (key === 'notifications' && newSettings.notifications === true) {
       NotificationService.requestPermissions()
         .then(hasPermission => {
@@ -148,17 +143,12 @@ const SettingsScreen = ({ navigation }) => {
           style: 'destructive',
           onPress: async () => {
             try {
-              // Show loading state
               setIsLoading(true);
               
-              // Clear any user-specific settings or cached data if needed
               await AsyncStorage.removeItem('userToken');
               
-              // Call the signOut function from auth context
               await signOut();
               
-              // The AuthContext will handle the navigation automatically
-              // when isAuthenticated state changes, the App.js conditional rendering will take over
             } catch (error) {
               console.error('Sign out error:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
@@ -184,10 +174,8 @@ const SettingsScreen = ({ navigation }) => {
             try {
               setClearingCache(true);
               
-              // Get all keys from AsyncStorage
               const keys = await AsyncStorage.getAllKeys();
               
-              // Filter out keys that should not be deleted (like auth tokens, settings)
               const keysToRemove = keys.filter(key => 
                 !key.includes('auth') && 
                 !key.includes('token') && 
@@ -195,10 +183,8 @@ const SettingsScreen = ({ navigation }) => {
                 key !== 'themePreference'
               );
               
-              // Remove the filtered keys
               await AsyncStorage.multiRemove(keysToRemove);
               
-              // Clear image cache if available
               if (global.ImageCacheManager && typeof global.ImageCacheManager.clearCache === 'function') {
                 await global.ImageCacheManager.clearCache();
               }

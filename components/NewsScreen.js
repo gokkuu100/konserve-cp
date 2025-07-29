@@ -43,7 +43,6 @@ const formatDate = (dateString) => {
   }
 };
 
-// News categories for filtering
 const NEWS_CATEGORIES = ['All', 'Events', 'Announcements', 'Reports'];
 
 const NewsScreen = ({ navigation }) => {
@@ -81,7 +80,6 @@ const NewsScreen = ({ navigation }) => {
       setLoading(true);
       setError(null);
       
-      // Fetch read articles
       await fetchReadArticles();
       
       // Fetch all news
@@ -136,10 +134,8 @@ const NewsScreen = ({ navigation }) => {
       // Mark news as read in Supabase
       await newsService.markAsRead(newsId);
       
-      // Update local read status
       setReadArticles(prev => [...prev, newsId]);
       
-      // Navigate to news detail screen
       navigation.navigate('NewsDetail', { newsId });
     } catch (err) {
       console.error('Error marking news as read:', err);
@@ -417,13 +413,13 @@ const NewsScreen = ({ navigation }) => {
                     renderItem={({item, index}) => renderFeaturedItem(item)}
                     keyExtractor={item => item.id}
                     onScroll={(event) => {
-                      const slideWidth = 292; // width of card (280) + right margin (12)
+                      const slideWidth = 292; 
                       const offset = event.nativeEvent.contentOffset.x;
                       const index = Math.round(offset / slideWidth);
                       setCurrentFeaturedIndex(index);
                     }}
                     pagingEnabled={false}
-                    snapToInterval={292} // width of card (280) + right margin (12)
+                    snapToInterval={292} 
                     snapToAlignment="start"
                     decelerationRate="fast"
                   />
@@ -699,7 +695,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   
-  // Vertical card styles (for filtered views)
   newsCardVertical: {
     borderRadius: 12,
     marginBottom: 16,

@@ -28,7 +28,6 @@ import MiniLeaderboard from './MiniLeaderboard';
 
 const { width } = Dimensions.get('window');
 
-// Format date to readable format
 const formatDate = (dateString) => {
   const date = new Date(dateString);
   const now = new Date();
@@ -164,7 +163,7 @@ const RewardPointsScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isRedeeming, setIsRedeeming] = useState(false);
   const [error, setError] = useState('');
-  const [leaderboardKey, setLeaderboardKey] = useState(0); // Add a key to force re-render
+  const [leaderboardKey, setLeaderboardKey] = useState(0); 
 
   // Calculate total points from activities
   const calculateTotalPoints = (activities) => {
@@ -183,8 +182,6 @@ const RewardPointsScreen = () => {
     refreshLeaderboard();
     
     return () => {
-      // Cleanup subscriptions when component unmounts
-      // Unsubscribe from any realtime subscriptions
     };
   }, []);
 
@@ -199,7 +196,6 @@ const RewardPointsScreen = () => {
       // Update the current user's points in the leaderboard
       await LeaderboardManager.updateUserLeaderboardPoints(currentUser.id);
       
-      // Force re-render of the MiniLeaderboard component
       setLeaderboardKey(prevKey => prevKey + 1);
     } catch (error) {
       console.error('Error refreshing leaderboard:', error);
@@ -214,7 +210,6 @@ const RewardPointsScreen = () => {
         throw new Error('No authenticated user');
       }
 
-      // Fetch user's total points and profile in parallel
       const [totalPointsResponse, profileResponse, historyResponse] = await Promise.all([
         PointsManager.fetchTotalUserPoints(currentUser.id),
         ProfileManager.getUserProfile(currentUser.id),
@@ -257,7 +252,6 @@ const RewardPointsScreen = () => {
     // Subscribe to points updates
     PointsManager.subscribeToPointsUpdates(currentUser.id, (newPoints) => {
       setUserPoints(newPoints);
-      // Refresh leaderboard when points are updated
       refreshLeaderboard();
     });
 
@@ -274,7 +268,6 @@ const RewardPointsScreen = () => {
         return [formattedNewRedemption, ...prev];
       });
       
-      // Refresh leaderboard when new redemption is received
       refreshLeaderboard();
     });
   };
@@ -299,7 +292,6 @@ const RewardPointsScreen = () => {
         // Update local state with the new total points
         setUserPoints(result.data.totalPoints);
         
-        // Add new activity to the list
         const newActivity = {
           id: result.data.redemptionId,
           codeName: result.data.codeName,
@@ -314,7 +306,7 @@ const RewardPointsScreen = () => {
         refreshLeaderboard();
         
         Alert.alert('Success', result.message);
-        setRewardCode(''); // Clear the input field
+        setRewardCode(''); 
       } else {
         Alert.alert('Error', result.message);
       }
@@ -355,7 +347,6 @@ const RewardPointsScreen = () => {
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} />
       
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Rewards Card - Update with real data */}
         <View style={styles.cardContainer}>
           <LinearGradient
             colors={isDarkMode ? 
@@ -454,13 +445,12 @@ const RewardPointsScreen = () => {
         {/* Leaderboard Section */}
         <View style={styles.leaderboardWrapper}>
           <MiniLeaderboard 
-            key={leaderboardKey} // Add key to force re-render when points change
+            key={leaderboardKey}
             onViewFullLeaderboard={() => setShowLeaderboard(true)}
             theme={theme}
             isDarkMode={isDarkMode}
           />
 
-          {/* Info box for new users - only show if redemption history is empty */}
           {recentActivities.length === 0 && (
             <View style={[styles.leaderboardInfoBox, { 
               backgroundColor: isDarkMode ? '#1a3a5a' : '#E3F2FD',
@@ -594,7 +584,6 @@ const RewardPointsScreen = () => {
         <FullLeaderboardScreen 
           onClose={() => {
             setShowLeaderboard(false);
-            // Refresh leaderboard data when returning from full leaderboard
             refreshLeaderboard();
           }} 
           theme={theme}

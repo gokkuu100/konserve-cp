@@ -92,27 +92,22 @@ const ProfileCompletionScreen = ({ navigation, route }) => {
       // Check if we have a session from the auth process
       let session = null;
       
-      // If user object contains a session (from our navigation params)
       if (user.session) {
         session = user.session;
       } 
-      // Check global variable set by DeepLinkHandler
       else if (global.authSession) {
         session = global.authSession;
         
-        // Clear global session to avoid reuse
         global.authSession = null;
         global.authSucceeded = false;
         global.authUser = null;
       }
       
-      // If we don't have a session, get the current one
       if (!session) {
         const { data } = await supabase.auth.getSession();
         session = data?.session;
       }
       
-      // Sign in the user now that profile is complete
       if (session) {
         console.log('Signing in user with session');
         const { success } = await signIn(null, null, session);

@@ -70,7 +70,6 @@ const FeedbackScreen = ({ navigation }) => {
 
       setIsLoading(true);
 
-      // Format the feedback data according to the database schema
       const feedbackData = {
         userId: userId || user.id,
         rating: ratings[selectedRating].value,

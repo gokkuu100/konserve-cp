@@ -26,7 +26,6 @@ export const AuthProvider = ({ children }) => {
 
     async function initializeAuth() {
       try {
-        // Get initial session
         const currentSession = await AuthManager.getSession();
         
         if (mounted) {
@@ -38,7 +37,6 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         }
 
-        // Subscribe to auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
           async (event, newSession) => {
             console.log('Auth state changed:', event, newSession?.user?.id);
@@ -83,7 +81,6 @@ export const AuthProvider = ({ children }) => {
         session = data.session;
       }
       
-      // If we have a valid session, set user state
       if (session) {
         setUser(session.user);
         setUserId(session.user.id);
@@ -109,7 +106,6 @@ export const AuthProvider = ({ children }) => {
       const { error } = await AuthManager.signOut();
       if (error) throw error;
       
-      // Explicitly clear state after sign out
       setSession(null);
       setUser(null);
       setUserId(null);

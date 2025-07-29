@@ -16,7 +16,6 @@ import {
 import { newsService } from '../supabase/manager/news/NewsManager';
 import { useTheme } from '../ThemeContext';
 
-// Format date from ISO string
 const formatDate = (dateString) => {
   try {
     const date = parseISO(dateString);
@@ -27,7 +26,6 @@ const formatDate = (dateString) => {
   }
 };
 
-// Format relative time
 const getRelativeTime = (dateString) => {
   try {
     const date = parseISO(dateString);
@@ -54,7 +52,6 @@ const RelatedNewsSection = ({ currentNewsId, category, navigation, theme, isDark
         
         if (error) throw error;
         
-        // Filter out the current article and limit to 2 related articles
         const filtered = (data || [])
           .filter(item => item.id !== currentNewsId)
           .slice(0, 2);
@@ -71,7 +68,7 @@ const RelatedNewsSection = ({ currentNewsId, category, navigation, theme, isDark
   }, [currentNewsId, category]);
 
   if (loading || relatedNews.length === 0) {
-    return null; // Don't show the section if there are no related articles
+    return null; 
   }
 
   return (
@@ -129,7 +126,6 @@ const NewsDetailScreen = ({ route, navigation }) => {
       if (error) throw error;
       
       if (data) {
-        // Mark as read in Supabase
         await newsService.markAsRead(newsId);
         
         setNews(data);

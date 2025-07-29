@@ -34,7 +34,6 @@ const HomePageScreen = ({ navigation }) => {
   const [userName, setUserName] = useState('User');
   const [greeting, setGreetingState] = useState(getGreeting());
   
-  // Get auth context values including loading state
   const { user, userId, isAuthenticated, loading: authLoading } = useAuth();
   
   // Check authentication on mount and when auth state changes
@@ -43,14 +42,12 @@ const HomePageScreen = ({ navigation }) => {
       authLoading ? 'Loading auth state...' : 
       isAuthenticated ? 'Authenticated' : 'Not authenticated');
     
-    // Only redirect if auth is not loading and user is not authenticated
     if (!authLoading && !isAuthenticated) {
       console.log('User not authenticated, redirecting to Login');
       navigation.replace('Login');
       return;
     }
     
-    // If authenticated and not loading, load data
     if (isAuthenticated && !authLoading) {
       loadData();
     }
@@ -60,7 +57,7 @@ const HomePageScreen = ({ navigation }) => {
   useEffect(() => {
     const intervalId = setInterval(() => {
       setGreetingState(getGreeting());
-    }, 60000); // Update every minute
+    }, 60000); 
     
     return () => clearInterval(intervalId);
   }, []);
@@ -79,7 +76,6 @@ const HomePageScreen = ({ navigation }) => {
       
       console.log('Loading data for user:', user.id);
       
-      // Fetch user's full name
       const { data: profile, error: profileError } = await ProfileManager.getUserProfile();
       
       if (profileError) {
@@ -131,14 +127,13 @@ const HomePageScreen = ({ navigation }) => {
     navigation.navigate('ReportDetail', { reportId });
   };
 
-  // Get excerpt from full content (first 100 characters)
   const getExcerpt = (content, maxLength = 100) => {
     if (!content) return '';
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength).trim() + '...';
   };
 
-  // Featured report is the first one, if any
+  // Featured report is the first one
   const featuredReport = reports.length > 0 ? reports[0] : null;
   // The rest are regular reports
   const regularReports = reports.length > 1 ? reports.slice(1) : [];

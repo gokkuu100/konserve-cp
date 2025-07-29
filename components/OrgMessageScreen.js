@@ -21,7 +21,6 @@ import { useTheme } from '../ThemeContext';
 function formatTime(timeString) {
   if (!timeString) return '';
   
-  // Parse the timeString which might be in format like "08:00:00"
   const [hours, minutes] = timeString.split(':');
   const h = parseInt(hours, 10);
   const m = parseInt(minutes, 10);
@@ -33,7 +32,6 @@ function formatTime(timeString) {
   return `${formattedHours}:${formattedMinutes} ${ampm}`;
 }
 
-// Helper function to format date from ISO string
 function formatDate(dateString) {
   try {
     const date = parseISO(dateString);
@@ -155,7 +153,6 @@ const OrgMessageScreen = ({ navigation }) => {
   }, [isAuthenticated, loading, activeTab]);
 
   useEffect(() => {
-    // Define a global refresh function that can be called from notification handlers
     global.refreshOrgMessages = fetchMessages;
     
     return () => {
@@ -207,7 +204,6 @@ const OrgMessageScreen = ({ navigation }) => {
         const { success, error } = await OrganizationMessagesManager.markDirectMessageAsRead(messageId);
         
         if (success) {
-          // Update the local message state to reflect the change
           setMessages(messages.map(msg => 
             msg.id === messageId ? {...msg, isRead: true} : msg
           ));
@@ -218,7 +214,6 @@ const OrgMessageScreen = ({ navigation }) => {
         console.error('Error marking message as read:', error);
       }
     }
-    // We don't need to mark broadcast messages as read
   };
 
   const handleMessagePress = (message) => {

@@ -35,7 +35,6 @@ const EditProfileScreen = ({ navigation, route }) => {
   const [pendingRequest, setPendingRequest] = useState(null);
   const { user, userId, isAuthenticated, signIn, signOut, signUp } = useAuth();
 
-  // Fetch user data on component mount
   useEffect(() => {
     fetchUserProfile();
     checkPendingRequests();
@@ -91,7 +90,6 @@ const EditProfileScreen = ({ navigation, route }) => {
     }
   };
 
-  // Check pending constituency requests using ConstituencyManager
   const checkPendingRequests = async () => {
     try {
       const userId = await ProfileManager.getCurrentUserId();
@@ -144,12 +142,11 @@ const handleImageSelection = () => {
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.7,
-            base64: true // Request base64 data
+            base64: true 
           });
       
           if (!result.canceled && result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
-            // Make sure we have base64 data
             if (asset.base64) {
               handleAvatarUploadWithBase64(asset);
             } else {
@@ -166,12 +163,11 @@ const handleImageSelection = () => {
             allowsEditing: true,
             aspect: [1, 1],
             quality: 0.7,
-            base64: true // Request base64 data
+            base64: true 
           });
       
           if (!result.canceled && result.assets && result.assets.length > 0) {
             const asset = result.assets[0];
-            // Make sure we have base64 data
             if (asset.base64) {
               handleAvatarUploadWithBase64(asset);
             } else {
@@ -190,7 +186,6 @@ const handleAvatarUploadWithBase64 = async (asset) => {
   try {
     setLoading(true);
     
-    // Update UI immediately to show the selected image
     setUserData(prevData => ({
       ...prevData,
       avatar: asset.uri
@@ -213,11 +208,8 @@ const handleAvatarUploadWithBase64 = async (asset) => {
     console.log(`Uploading ${fileType} file to ${filePath}`);
     console.log(`Base64 data length: ${asset.base64.length} characters`);
     
-    // Convert base64 to buffer
-    // For React Native we need to use a different approach since Buffer isn't available
     const base64Data = asset.base64;
     
-    // For Expo, we need to use the Uint8Array approach
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -273,9 +265,8 @@ const handleAvatarUploadWithBase64 = async (asset) => {
   }
 };
 
-// Helper function to convert base64 to buffer (when working with Expo)
+// Helper function to convert base64 to buffer
 function atob(input) {
-  // For React Native
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
   let output = '';
   let i = 0;
@@ -316,7 +307,6 @@ function atob(input) {
         throw new Error('User not authenticated');
       }
       
-      // Prepare profile data for update - matching the expected field names in ProfileManager
       const profileData = {
         fullName: userData.fullName,
         phoneNumber: userData.phoneNumber,
@@ -336,7 +326,6 @@ function atob(input) {
       
       Alert.alert('Success', 'Profile updated successfully');
       
-      // Pass updated user data back to Options screen
       navigation.navigate('Options', { 
         updatedUser: {
           fullName: userData.fullName,
@@ -352,7 +341,6 @@ function atob(input) {
     }
   };
 
-  // Function to determine membership type text color
   const getMembershipTypeColor = () => {
     if (!userData) return '#000000';
     
@@ -366,7 +354,6 @@ function atob(input) {
     }
   };
 
-  // Generate age options from 18 to 100
   const generateAgeOptions = () => {
     const ages = [];
     for (let i = 18; i <= 100; i++) {
@@ -395,7 +382,6 @@ function atob(input) {
 
   // Handle constituency change request
   const handleConstituencyChangeRequest = () => {
-    // Check if user already has a pending request
     if (hasPendingRequest) {
       Alert.alert(
         'Pending Request',
@@ -441,12 +427,10 @@ function atob(input) {
     setChangeRequestModalVisible(true);
   };
   
-  // Handle successful constituency change request
   const handleRequestSubmitted = (success) => {
     setChangeRequestModalVisible(false);
     
     if (success) {
-      // Refresh pending requests
       checkPendingRequests();
     }
   };
@@ -648,7 +632,7 @@ function atob(input) {
           </View>
         </View>
 
-        {/* Membership type - Color-coded */}
+        {/* Membership type */}
         <Text style={[styles.sectionLabel, { color: theme.textSecondary }]}>Membership type</Text>
         <View style={[styles.inputCard, { 
           backgroundColor: theme.surface,

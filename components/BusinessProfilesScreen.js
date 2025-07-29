@@ -36,7 +36,7 @@ const BusinessProfilesScreen = ({ navigation }) => {
   useEffect(() => {
     loadProfiles();
     
-    // Refresh profiles when screen comes into focus
+    // Refreshes profiles when screen comes into focus
     const unsubscribe = navigation.addListener('focus', () => {
       loadProfiles();
     });
@@ -54,12 +54,10 @@ const BusinessProfilesScreen = ({ navigation }) => {
   };
 
   const handleViewProfile = (profile) => {
-    // Navigate to BusinessProfileDetailScreen with the selected profile
     navigation.navigate('BusinessProfileDetailScreen', { profileId: profile.id });
   };
 
   const handleEditProfile = (profile) => {
-    // Navigate to profile edit screen (to be implemented)
     navigation.navigate('BusinessProfileEditScreen', { profileId: profile.id });
   };
 
@@ -76,7 +74,7 @@ const BusinessProfilesScreen = ({ navigation }) => {
             try {
               setLoading(true);
               await BusinessProfileManager.deleteBusinessProfile(profileId);
-              // Refresh the list after deletion
+              // Refreshes the list after deletion
               loadProfiles();
               Alert.alert('Success', 'Business profile deleted successfully');
             } catch (error) {
@@ -97,7 +95,7 @@ const BusinessProfilesScreen = ({ navigation }) => {
       ? wasteTypes.slice(0, 2).join(', ') + (wasteTypes.length > 2 ? '...' : '')
       : 'No waste types specified';
     
-    // Check if there's an active subscription (placeholder logic)
+    // Check if there's an active subscription
     const hasActiveSubscription = false;
     
     return (

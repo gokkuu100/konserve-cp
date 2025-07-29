@@ -133,7 +133,7 @@ const AgencyReviewScreen = ({ route, navigation }) => {
               setRating(0);
               setSatisfaction(null);
               setComment('');
-              fetchReviews(); // Refresh reviews after submission
+              fetchReviews(); 
             }
           }
         ]

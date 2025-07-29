@@ -34,22 +34,19 @@ const ChatComponent = () => {
   const navigation = useNavigation();
   const { user, userId, isAuthenticated, signOut } = useAuth();
   
-  // Add a state for tracking unread messages
+  
   const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
   // Track when the component is focused
   useFocusEffect(
     React.useCallback(() => {
-      // This runs when the screen comes into focus
       console.log('Chat screen focused');
       
-      // Mark messages as read when the screen comes into focus
       if (isAuthenticated && user && userConstituency) {
         markMessagesAsRead();
       }
       
       return () => {
-        // This runs when the screen goes out of focus
         console.log('Chat screen blurred');
       };
     }, [isAuthenticated, user, userConstituency])
@@ -60,16 +57,12 @@ const ChatComponent = () => {
     const checkSession = async () => {
       console.log('Checking Supabase session directly...');
       try {
-        // Get current session directly from Supabase
         const { data: { session } } = await supabase.auth.getSession();
         
         console.log('Session check result:', session ? 'Session exists' : 'No session');
         
         if (!session) {
-          // Only redirect if not authenticated and initial check is done
           console.log('No active session, user needs to login');
-          // Don't redirect immediately, allow AuthContext to potentially restore the session
-          // This prevents unnecessary redirects if auth state is still loading
         }
         
         setInitialCheckDone(true);
@@ -86,10 +79,8 @@ const ChatComponent = () => {
   useEffect(() => {
     console.log('Auth state changed - authenticated:', isAuthenticated, 'user:', user ? 'exists' : 'null');
     
-    // Only proceed with check after initial load
     if (!initialCheckDone) return;
     
-    // If we confirm the user is not authenticated after initial check, redirect
     if (!isAuthenticated || !user) {
       console.log('User confirmed not authenticated, redirecting to login');
       navigation.replace('Login');
@@ -126,7 +117,7 @@ const ChatComponent = () => {
     }
   };
   
-  // Clean up subscription and other resources
+  
   const cleanupChat = () => {
     console.log('Cleaning up chat resources...');
     if (subscriptionRef.current) {
@@ -138,7 +129,6 @@ const ChatComponent = () => {
   
   // Setup message subscription with proper auth checks
   const setupMessageSubscription = async () => {
-    // Double-check authentication before proceeding
     if (!user || !userId) {
       console.log('Cannot setup subscription - missing user or userId');
       return;
@@ -154,7 +144,6 @@ const ChatComponent = () => {
 
       console.log('Setting up message subscription for user:', userId);
       
-      // Prevent duplicate subscriptions
       if (subscriptionRef.current) {
         console.log('Subscription already exists');
         return;
@@ -177,7 +166,6 @@ const ChatComponent = () => {
     console.log('Loading messages...');
     setIsLoading(true);
     
-    // Double-check authentication before proceeding
     if (!user || !userId) {
       console.log('Cannot load messages - missing user or userId');
       setIsLoading(false);
@@ -212,10 +200,8 @@ const ChatComponent = () => {
         return;
       }
       
-      // Store the user's constituency for display in the header
       setUserConstituency(constituency);
       
-      // Fetch messages for constituency using MessageManager
       console.log(`Fetching messages for constituency: ${constituency}`);
       const { data, error } = await MessageManager.fetchMessagesByConstituency(constituency);
       
@@ -228,7 +214,6 @@ const ChatComponent = () => {
       
       console.log(`Loaded ${data?.length || 0} messages for constituency: ${constituency}`);
       
-      // Process messages
       processLoadedMessages(data || []);
       
       // After successfully loading messages, mark them as read
@@ -241,28 +226,25 @@ const ChatComponent = () => {
     }
   };
   
-  // Process loaded messages
   const processLoadedMessages = (messagesData) => {
     // Reset sent message IDs set
     const newSentIds = new Set();
     
     if (messagesData.length > 0) {
       const formattedMessages = messagesData.map(msg => {
-        // Add message ID to our set of known messages
         newSentIds.add(msg.id);
         
         return {
           id: msg.id,
           text: msg.text,
           sender: msg.sender_name || 'Unknown',
-          rawTimestamp: msg.created_at, // Store original timestamp
+          rawTimestamp: msg.created_at,
           timestamp: formatTimestamp(msg.created_at),
           isCurrentUser: msg.user_id === userId,
           avatar: msg.avatar_url
         };
       });
       
-      // Set the new sent IDs
       setSentMessageIds(newSentIds);
       
       // Sort messages by timestamp
@@ -286,10 +268,7 @@ const ChatComponent = () => {
     }
   };
   
-  // Process new message from subscription
   const processNewMessage = (newMessage) => {
-    // If the message has a temporary ID (from our optimistic updates)
-    // or it's already in our sentMessageIds set, don't add it again
     if (
       (newMessage.id && newMessage.id.startsWith('temp-')) || 
       (newMessage.id && sentMessageIds.has(newMessage.id))
@@ -308,7 +287,7 @@ const ChatComponent = () => {
     // Format the message for display
     const formattedMessage = {
       id: newMessage.id,
-      text: newMessage.text || newMessage.message, // Handle different property names
+      text: newMessage.text || newMessage.message, 
       sender: newMessage.sender_name || newMessage.sender || 'Unknown',
       rawTimestamp: newMessage.created_at || newMessage.timestamp,
       timestamp: formatTimestamp(newMessage.created_at || newMessage.timestamp),
@@ -316,7 +295,6 @@ const ChatComponent = () => {
       avatar: newMessage.avatar_url || newMessage.avatar
     };
     
-    // Add new message and ensure sorted by timestamp
     setMessages(prevMessages => {
       const updatedMessages = [...prevMessages, formattedMessage];
       
@@ -333,7 +311,6 @@ const ChatComponent = () => {
       setSentMessageIds(prev => new Set([...prev, newMessage.id]));
     }
     
-    // Scroll to bottom - with failsafes to ensure it works
     setTimeout(() => {
       if (flatListRef.current) {
         flatListRef.current.scrollToEnd({ animated: true });
@@ -347,7 +324,7 @@ const ChatComponent = () => {
       const date = new Date(isoString);
       if (isNaN(date.getTime())) {
         console.error('Invalid date:', isoString);
-        return '00:00'; // Fallback
+        return '00:00'; 
       }
       
       return date.toLocaleTimeString([], { 
@@ -357,7 +334,7 @@ const ChatComponent = () => {
       });
     } catch (error) {
       console.error('Error formatting timestamp:', error, isoString);
-      return '00:00'; // Fallback
+      return '00:00'; 
     }
   };
   
@@ -367,10 +344,8 @@ const ChatComponent = () => {
     
     console.log('Sending message:', inputMessage);
     
-    // Store the message text before clearing input
     const messageToSend = inputMessage.trim();
     
-    // Clear input immediately for better UX
     setInputMessage('');
     setIsSending(true);
     
@@ -379,13 +354,11 @@ const ChatComponent = () => {
         throw new Error('User not authenticated');
       }
       
-      // Generate temp ID for optimistic update
       const tempId = `temp-${Date.now()}`;
       const currentTime = new Date().toISOString();
       
-      // Add message optimistically to UI for immediate feedback
       const optimisticMessage = {
-        id: tempId, // Temporary ID until server response
+        id: tempId, 
         text: messageToSend,
         sender: user?.user_metadata?.full_name || 'You',
         rawTimestamp: currentTime,
@@ -405,7 +378,6 @@ const ChatComponent = () => {
         });
       });
       
-      // Scroll to bottom immediately and reliably
       requestAnimationFrame(() => {
         setTimeout(() => {
           if (flatListRef.current) {
@@ -421,21 +393,17 @@ const ChatComponent = () => {
         console.error("Error sending message:", error);
         Alert.alert('Error', `Failed to send message: ${error.message}`);
         
-        // Remove optimistic message on error
         setMessages(prevMessages => 
           prevMessages.filter(msg => msg.id !== tempId)
         );
         
-        // Restore the message in the input field
         setInputMessage(messageToSend);
         return;
       }
       
       console.log('Message sent successfully:', data);
       
-      // If we have the returned message ID, add it to our set of known messages
       if (data && data.length > 0 && data[0].id) {
-        // Add the real message ID to our set of sent messages
         const realMessageId = data[0].id;
         setSentMessageIds(prev => new Set([...prev, realMessageId]));
         
@@ -456,7 +424,6 @@ const ChatComponent = () => {
       console.error('Error in handleSendMessage:', error);
       Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
       
-      // Restore input if error
       setInputMessage(messageToSend);
     } finally {
       setIsSending(false);
@@ -478,7 +445,6 @@ const ChatComponent = () => {
     }
   };
   
-  // Add a header with sign out button and constituency information
   const renderHeader = () => (
     <View style={[styles.headerContainer, { backgroundColor: theme.primary }]}>
       <Text style={styles.headerTitle}>Chat</Text>
@@ -500,17 +466,14 @@ const ChatComponent = () => {
   
   // Render message with optimistic UI state
   const renderMessage = ({ item, index }) => {
-    // Determine if this is an optimistic message (still sending)
     const isOptimistic = item._isOptimistic === true;
     
-    // Check if we need to show a date separator
     const showDateSeparator = index === 0 || 
       !isSameDay(
         new Date(messages[index - 1].rawTimestamp || messages[index - 1].timestamp), 
         new Date(item.rawTimestamp || item.timestamp)
       );
     
-    // Determine if we should show the sender's info
     const shouldShowSenderInfo = index === 0 || 
       messages[index - 1].sender !== item.sender;
     
@@ -538,7 +501,6 @@ const ChatComponent = () => {
           )}
           
           <View style={styles.bubbleWrapper}>
-            {/* Sender name for other users' first message in a sequence */}
             {!item.isCurrentUser && shouldShowSenderInfo && (
               <Text style={[styles.senderName, { color: theme.primary }]}>{item.sender}</Text>
             )}
@@ -552,7 +514,7 @@ const ChatComponent = () => {
                   backgroundColor: isDarkMode ? theme.surface : '#ffffff',
                   borderColor: theme.border
                 }],
-              isOptimistic && styles.optimisticBubble // Add style for optimistic messages
+              isOptimistic && styles.optimisticBubble
             ]}>
               <Text style={[
                 styles.messageText,
@@ -564,7 +526,6 @@ const ChatComponent = () => {
               </Text>
             </View>
             
-            {/* Timestamp and sending indicator */}
             <View style={styles.messageFooter}>
               <Text style={[
                 styles.messageTimestamp,
@@ -587,7 +548,6 @@ const ChatComponent = () => {
     );
   };
   
-  // Helper function to check if two dates are the same day
   const isSameDay = (date1, date2) => {
     if (!date1 || !date2 || isNaN(date1.getTime()) || isNaN(date2.getTime())) {
       return false;
@@ -597,7 +557,6 @@ const ChatComponent = () => {
            date1.getFullYear() === date2.getFullYear();
   };
   
-  // Format date for the header
   const formatDateForHeader = (timestamp) => {
     try {
       const date = new Date(timestamp);
@@ -640,7 +599,7 @@ const ChatComponent = () => {
       const { success, error } = await MessageManager.constructor.markMessagesAsRead(
         userId,
         userConstituency,
-        new Date() // Mark all messages up to now as read
+        new Date() 
       );
       
       if (error) {
@@ -649,7 +608,6 @@ const ChatComponent = () => {
         console.log('Successfully marked messages as read');
         setHasUnreadMessages(false);
         
-        // Notify any listeners (like the tab bar) that messages have been read
         if (global.messageReadListeners) {
           global.messageReadListeners.forEach(listener => listener());
         }
@@ -659,7 +617,6 @@ const ChatComponent = () => {
     }
   };
   
-  // Handle scrolling to mark messages as read
   const handleMessageScroll = ({ nativeEvent }) => {
     // Only mark as read if the user has scrolled near the bottom of the list
     const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
@@ -675,13 +632,11 @@ const ChatComponent = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       {!initialCheckDone || (!isAuthenticated && !user) ? (
-        // Show authentication checking UI
         <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
           <ActivityIndicator size="large" color={theme.primary} />
           <Text style={[styles.loadingText, { color: theme.textSecondary }]}>Checking authentication...</Text>
         </View>
       ) : !isAuthenticated || !user ? (
-        // Show login prompt if not authenticated
         <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
           <Text style={[styles.authRequiredText, { color: theme.text }]}>Authentication required</Text>
           <TouchableOpacity 
@@ -692,7 +647,6 @@ const ChatComponent = () => {
           </TouchableOpacity>
         </View>
       ) : (
-        // Show the chat UI when authenticated
         <>
           {renderHeader()}
           <KeyboardAvoidingView
@@ -719,7 +673,7 @@ const ChatComponent = () => {
                 onRefresh={loadMessages}
                 refreshing={isLoading}
                 onScroll={handleMessageScroll}
-                scrollEventThrottle={400} // Only call scroll event every 400ms for performance
+                scrollEventThrottle={400} 
               />
             )}
             

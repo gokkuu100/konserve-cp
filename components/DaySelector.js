@@ -17,7 +17,6 @@ const DaySelector = ({ onDaySelect, selectedDays = {}, maxDays = null }) => {
     const isCurrentlySelected = selectedDays[day];
     const selectedCount = Object.values(selectedDays).filter(Boolean).length;
     
-    // If the day is already selected, allow deselecting it
     if (isCurrentlySelected) {
       onDaySelect(day, false);
       return;
@@ -33,7 +32,6 @@ const DaySelector = ({ onDaySelect, selectedDays = {}, maxDays = null }) => {
       return;
     }
     
-    // Otherwise, select the day
     onDaySelect(day, true);
   };
 

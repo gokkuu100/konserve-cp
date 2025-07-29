@@ -58,7 +58,6 @@ const LocationSelectionModal = ({
     if (isCountySelectable) {
       onSelectCounty(county);
     }
-    // Move to constituency selection after county is selected
     setActiveTab('constituency');
   };
 

@@ -9,7 +9,6 @@ const DEFAULT_AVATAR = 'https://ui-avatars.com/api/?background=4CAF50&color=fff&
 
 const FullLeaderboardScreen = ({ onClose, theme: propTheme, isDarkMode: propIsDarkMode }) => {
   const themeContext = useTheme();
-  // Use provided theme props or fall back to context if not provided
   const theme = propTheme || themeContext.theme;
   const isDarkMode = propIsDarkMode !== undefined ? propIsDarkMode : themeContext.isDarkMode;
   
@@ -21,7 +20,6 @@ const FullLeaderboardScreen = ({ onClose, theme: propTheme, isDarkMode: propIsDa
   const [refreshing, setRefreshing] = useState(false);
   const [userNotRanked, setUserNotRanked] = useState(false);
 
-  // Authentication check and data loading
   useEffect(() => {
     if (!authLoading) {
       fetchLeaderboardData();
@@ -36,7 +34,6 @@ const FullLeaderboardScreen = ({ onClose, theme: propTheme, isDarkMode: propIsDa
       
       console.log('Fetching full leaderboard data...');
       
-      // Fetch complete leaderboard data
       const { data, error } = await LeaderboardManager.fetchLeaderboardData(100);
       
       if (error) {
@@ -50,7 +47,6 @@ const FullLeaderboardScreen = ({ onClose, theme: propTheme, isDarkMode: propIsDa
       console.log('Leaderboard data:', sortedUsers);
       setLeaderboardData(sortedUsers);
       
-      // If user is authenticated, find them directly in the leaderboard data
       if (isAuthenticated && userId) {
         const currentUserInLeaderboard = sortedUsers.find(user => 
           user.user_id === userId
@@ -148,7 +144,6 @@ const FullLeaderboardScreen = ({ onClose, theme: propTheme, isDarkMode: propIsDa
         </View>
       )}
       
-      {/* Show the "not ranked yet" banner if applicable */}
       {userNotRanked && (
         <View style={[styles.notRankedInfo, {
           backgroundColor: isDarkMode ? '#3e3e26' : '#FFF8E1',

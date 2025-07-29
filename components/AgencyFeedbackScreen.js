@@ -28,7 +28,7 @@ import ProfileManager from '../supabase/manager/auth/ProfileManager';
 import authManager from '../supabase/manager/auth/AuthManager';
 import AgencyManager from '../supabase/manager/agency/AgencyManager';
 
-// Configure notifications (typically done in your App.js or similar)
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -40,7 +40,7 @@ Notifications.setNotificationHandler({
 const AgencyFeedbackScreen = ({ route, navigation }) => {
   const { theme, isDarkMode } = useTheme();
   const { user, isAuthenticated, loading } = useAuth();
-  // Agency data comes from route params or defaults to null
+  // Agency data comes from route params
   const { agencyId: preselectedAgencyId, agency: preselectedAgency } = route?.params || {};
 
   const [rating, setRating] = useState(0);
@@ -48,14 +48,13 @@ const AgencyFeedbackScreen = ({ route, navigation }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
   
-  // Subscription-related state
+  // Subscription states
   const [activeSubscriptions, setActiveSubscriptions] = useState([]);
   const [selectedAgency, setSelectedAgency] = useState(null);
   const [loadingSubscriptions, setLoadingSubscriptions] = useState(true);
   const [subscriptionError, setSubscriptionError] = useState(null);
   const [showAgencySelector, setShowAgencySelector] = useState(false);
 
-  // Add a fallback in case theme is missing some properties
   const themeColors = {
     text: isDarkMode ? '#FFF' : '#333',
     textSecondary: isDarkMode ? '#BBB' : '#666',
@@ -153,16 +152,16 @@ const AgencyFeedbackScreen = ({ route, navigation }) => {
     }
   };
 
-  // Open agency selector modal
+
   const openAgencySelector = () => {
     setShowAgencySelector(true);
   };
 
-  // Select an agency and close the modal
+  // Select an agency
   const handleAgencySelect = (agency) => {
     setSelectedAgency(agency);
     setShowAgencySelector(false);
-    // Reset rating and comment when changing agency
+    // Reset rating and comment
     setRating(0);
     setComment('');
   };
@@ -172,7 +171,7 @@ const AgencyFeedbackScreen = ({ route, navigation }) => {
     navigation.navigate('CollectionAgencies');
   };
 
-  // Function to register for push notifications
+  // Function for push notifications
   const registerForPushNotifications = async (userId) => {
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -196,7 +195,6 @@ const AgencyFeedbackScreen = ({ route, navigation }) => {
     }
   };
 
-  // Handle navigation back
   const handleGoBack = () => {
     navigation.goBack();
   };
@@ -256,7 +254,7 @@ const AgencyFeedbackScreen = ({ route, navigation }) => {
   const scheduleReminderNotification = async (agencyName) => {
     try {
       const trigger = new Date();
-      trigger.setDate(trigger.getDate() + 30); // Remind after 30 days
+      trigger.setDate(trigger.getDate() + 30); 
 
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -650,7 +648,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  // Agency Selector Styles
+  
   agencySelector: {
     borderRadius: 12,
     marginBottom: 16,
@@ -711,7 +709,7 @@ const styles = StyleSheet.create({
   agencySelectorButton: {
     padding: 4,
   },
-  // Agency Card Styles
+  
   agencyCard: {
     backgroundColor: '#fff',
     borderRadius: 12,

@@ -18,7 +18,7 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
   const [loading, setLoading] = useState(false);
   const [businessTypes, setBusinessTypes] = useState([]);
   const [showBusinessTypeModal, setShowBusinessTypeModal] = useState(false);
-  const [step, setStep] = useState(1); // 1 = Business Details, 2 = Waste Details
+  const [step, setStep] = useState(1); 
   
   // Business Profile Form State
   const [businessName, setBusinessName] = useState('');
@@ -41,7 +41,7 @@ const BusinessProfileCreationScreen = ({ navigation, route }) => {
   const [collectionFrequency, setCollectionFrequency] = useState('');
   const [specialRequirements, setSpecialRequirements] = useState('');
   
-  // Available waste types
+
   const availableWasteTypes = [
     'General Waste', 'Organic/Food Waste', 'Paper/Cardboard', 
     'Plastic', 'Glass', 'Metal', 'E-waste', 'Hazardous Waste'

@@ -25,7 +25,6 @@ import CalendarManager from '../supabase/manager/calendar/CalendarManager';
 import NotificationService from '../supabase/services/NotificationService';
 import { useTheme } from '../ThemeContext';
 
-// ... existing notification setup code ...
 
 const WasteCalendarScreen = ({ navigation }) => {
   const { user } = useAuth();
@@ -38,8 +37,8 @@ const WasteCalendarScreen = ({ navigation }) => {
     cardAlt: isDarkMode ? '#222' : '#F0F4EA',
     text: isDarkMode ? theme.text : '#2C3E50',
     secondaryText: isDarkMode ? theme.textSecondary : '#617487',
-    primary: theme.primary || '#4CAF50',    // Green - representing sustainability
-    accent: '#FFA000',     // Amber color for highlighting current date
+    primary: theme.primary || '#4CAF50',    // Green 
+    accent: '#FFA000',     // Amber color
     border: isDarkMode ? '#444' : '#E0E6D9',
     error: isDarkMode ? '#ff6b6b' : '#E74C3C',
     headerBackground: isDarkMode ? '#1a331a' : '#3E7D41' // Darker green for header
@@ -79,7 +78,6 @@ const WasteCalendarScreen = ({ navigation }) => {
         return;
       }
       
-      // Create marked dates object for calendar - only mark dates with memos
       const marks = {};
       data.forEach(date => {
         marks[date] = {
@@ -88,7 +86,6 @@ const WasteCalendarScreen = ({ navigation }) => {
         };
       });
       
-      // Always highlight today with a special color, but keep the dot if it has memos
       const todayObj = marks[today] || {};
       marks[today] = {
         ...todayObj,
@@ -96,13 +93,12 @@ const WasteCalendarScreen = ({ navigation }) => {
         selectedColor: colors.accent, // Use amber color for today
       };
       
-      // Always highlight selected date if different from today
       if (selectedDate && selectedDate !== today) {
         const selectedObj = marks[selectedDate] || {};
         marks[selectedDate] = {
           ...selectedObj,
           selected: true,
-          selectedColor: colors.primary, // Use primary green for selected dates
+          selectedColor: colors.primary, 
         };
       }
       
@@ -138,10 +134,8 @@ const WasteCalendarScreen = ({ navigation }) => {
   
   const loadUpcomingMemos = async (uid) => {
     try {
-      // Get current date
       const currentDate = new Date().toISOString().split('T')[0];
       
-      // Use the existing getUpcomingMemos function that exists
       const { data, error } = await CalendarManager.getUpcomingMemos(uid, 5);
       
       if (error) {
@@ -149,12 +143,10 @@ const WasteCalendarScreen = ({ navigation }) => {
         return;
       }
       
-      // Filter to only include dates from today forward
       const filteredUpcoming = data ? data.filter(memo => {
         return memo.date >= currentDate && memo.date !== selectedDate;
       }) : [];
       
-      // Sort by date and time
       filteredUpcoming.sort((a, b) => {
         if (a.date !== b.date) return a.date.localeCompare(b.date);
         return (a.time || '00:00').localeCompare(b.time || '00:00');
@@ -272,10 +264,8 @@ const WasteCalendarScreen = ({ navigation }) => {
     
     setMarkedDates(updatedMarks);
     
-    // Load memos for the selected date is handled by the useEffect dependency
   };
 
-  // ... existing schedule notification functions ...
 
   const scheduleNotification = async (date, time, memo) => {
     try {
@@ -393,7 +383,6 @@ const WasteCalendarScreen = ({ navigation }) => {
         }
       }
       
-      // Reset form and refresh data
       setMemoText('');
       setMemoTitle('');
       setSelectedTime(new Date());
@@ -448,7 +437,6 @@ const WasteCalendarScreen = ({ navigation }) => {
               const success = await deleteMemoFromSupabase(memoId);
               
               if (success) {
-                // Refresh memos
                 await loadSavedMemos(user.id);
                 await loadMemoDates(user.id);
                 await loadUpcomingMemos(user.id);
@@ -553,7 +541,6 @@ const WasteCalendarScreen = ({ navigation }) => {
                   arrowColor: colors.primary,
                   dotColor: colors.primary,
                   todayBackgroundColor: 'transparent',
-                  // Add these for better dark mode support
                   textMonthFontWeight: 'bold',
                   textDayHeaderFontWeight: '600',
                   textDayFontSize: 16,
@@ -644,7 +631,6 @@ const WasteCalendarScreen = ({ navigation }) => {
                       </TouchableOpacity>
                     </View>
                     
-                    {/* Content wrapped in ScrollView to allow scrolling if keyboard pushes content up */}
                     <ScrollView keyboardShouldPersistTaps="handled">
                       <TextInput
                         style={[styles.titleInput, { 
@@ -733,7 +719,6 @@ const WasteCalendarScreen = ({ navigation }) => {
                       </View>
                     )}
                     
-                    {/* Android uses the system time picker which appears as a dialog */}
                     {Platform.OS === 'android' && showTimePicker && (
                       <DateTimePicker
                         value={selectedTime}
